@@ -1,0 +1,12 @@
+# Ignorer les résultats
+results/*.png
+results/*.jpg
+results/*.pdf
+
+# Ignorer les pycache
+__pycache__/
+*.py[cod]
+
+# Ignorer fichiers systèmes
+.DS_Store
+Thumbs.db
