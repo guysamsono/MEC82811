@@ -64,7 +64,7 @@ ti, ri = np.meshgrid(tdom, rdom, indexing='ij')
 
 # Évaluation des fonctions sur le maillage
 z_MMS = f_C_MMS(ti, ri)
-z_source = f_source(ti, ri)  # Supposons alpha = 1 pour visualisation
+z_source = f_source(ti, ri)  
 
 # Tracé des résultats
 plt.figure()
