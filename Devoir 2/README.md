@@ -1,4 +1,4 @@
-# MEC8211 - Devoir 1 : Résolution numérique de l'équation de diffusion
+# MEC8211 - Devoir 2 : Résolution numérique de l'équation de diffusion
 
 Ce dépôt contient le code source pour le premier devoir du cours MEC8211 - Vérification et validation en modélisation numérique.
 
