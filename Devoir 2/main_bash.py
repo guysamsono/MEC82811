@@ -22,8 +22,9 @@ if __name__ == "__main__":
     dossier_courant = os.path.dirname(os.path.abspath(__file__))
     os.makedirs(os.path.join(dossier_courant, "results"), exist_ok=True)
 
-    noeuds_spatiaux = 100
-    noeuds_temporels = 100
+    # Valeurs remplacées par sed pour le script Bash
+    noeuds_spatiaux = YYYY
+    noeuds_temporels = ZZZZ
 
     # Ajout du paramètre de pas de temps (DT) au dictionnaire
     params["DT"] = params["TF"] / noeuds_temporels
@@ -47,5 +48,6 @@ if __name__ == "__main__":
     # Calcul de l'erreur
     erreur_l2 = norm_l2(concentration_num, concentration_exacte)
 
-    # Impression de l'erreur
+    # Impression de l'erreur pour le script bash (NE PAS MODIFIER)
+    # La syntaxe doit correspondre exactement à ce que grep cherche
     print(f"The absolute error = {erreur_l2}")

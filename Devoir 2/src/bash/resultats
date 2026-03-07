@@ -1,0 +1,78 @@
+Analyse de convergence:
+
+Résultats pour Espace=1000, Temps=100 :
+Dérivée en temps :
+-0.01*(1 - 4.0*r**2)*exp(-0.001*t)
+Dérivée première :
+-80.0*r*exp(-0.001*t)
+Dérivée seconde :
+-80.0*exp(-0.001*t)
+Terme source :
+-0.00999996*(1 - 4.0*r**2)*exp(-0.001*t) + 8.0e-8 + 1.6e-8*exp(-0.001*t)
+
+Condition initiale T(0, r) :
+30 - 40.0*r**2
+
+Condition frontière T(t, R) :
+20
+
+Condition frontière Neumann dT/dr(t, 0) :
+0
+The absolute error = 26.162219455860228
+Résultats pour Espace=1000, Temps=200 :
+Dérivée en temps :
+-0.01*(1 - 4.0*r**2)*exp(-0.001*t)
+Dérivée première :
+-80.0*r*exp(-0.001*t)
+Dérivée seconde :
+-80.0*exp(-0.001*t)
+Terme source :
+-0.00999996*(1 - 4.0*r**2)*exp(-0.001*t) + 8.0e-8 + 1.6e-8*exp(-0.001*t)
+
+Condition initiale T(0, r) :
+30 - 40.0*r**2
+
+Condition frontière T(t, R) :
+20
+
+Condition frontière Neumann dT/dr(t, 0) :
+0
+The absolute error = 26.162219403764162
+Résultats pour Espace=1000, Temps=400 :
+Dérivée en temps :
+-0.01*(1 - 4.0*r**2)*exp(-0.001*t)
+Dérivée première :
+-80.0*r*exp(-0.001*t)
+Dérivée seconde :
+-80.0*exp(-0.001*t)
+Terme source :
+-0.00999996*(1 - 4.0*r**2)*exp(-0.001*t) + 8.0e-8 + 1.6e-8*exp(-0.001*t)
+
+Condition initiale T(0, r) :
+30 - 40.0*r**2
+
+Condition frontière T(t, R) :
+20
+
+Condition frontière Neumann dT/dr(t, 0) :
+0
+The absolute error = 26.162219377706876
+Résultats pour Espace=1000, Temps=800 :
+Dérivée en temps :
+-0.01*(1 - 4.0*r**2)*exp(-0.001*t)
+Dérivée première :
+-80.0*r*exp(-0.001*t)
+Dérivée seconde :
+-80.0*exp(-0.001*t)
+Terme source :
+-0.00999996*(1 - 4.0*r**2)*exp(-0.001*t) + 8.0e-8 + 1.6e-8*exp(-0.001*t)
+
+Condition initiale T(0, r) :
+30 - 40.0*r**2
+
+Condition frontière T(t, R) :
+20
+
+Condition frontière Neumann dT/dr(t, 0) :
+0
+The absolute error = 26.162219364675916
