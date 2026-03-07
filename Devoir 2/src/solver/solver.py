@@ -3,16 +3,17 @@ Fonctions fournissant les solver numériques et analytique pour le problème de 
 """
 import numpy as np
 
-def first_order(params:dict, n_points=100):
+def first_order(params:dict, n_points=100, f_source=None, f_exacte=None):
     """
     Schéma de résolution d'ordre 1.
 
     :param params: paramètres du problème
     :param n_points: nombre de noeuds
+    :param f_source: Fonction générant le terme source MMS S(t, r)
+    :param f_exacte: Fonction de la solution exacte MMS pour la condition initiale
     """
     ri = params["RI"]
     ro = params["RO"]
-    s = params["S"]
     ce = params["CE"]
     d_eff = params["D_EFF"]
     K = params["K"]
@@ -21,10 +22,21 @@ def first_order(params:dict, n_points=100):
 
     discretization = np.linspace(ri, ro, n_points)
     dr = discretization[1] - discretization[0]
-    concentration_vect = np.zeros(n_points)
     temps = 0
 
+    # Condition Initiale
+    if f_exacte is not None:
+        concentration_vect = f_exacte(0, discretization)
+    else:
+        concentration_vect = np.zeros(n_points)
+
+    # Historique 2D pour le calcul d'erreur
+    historique_concentration = [concentration_vect.copy()]
+    vecteur_temps = [temps]
+
     while temps < tf:
+        temps += dt  
+        
         a = np.zeros((n_points, n_points))
         b = np.zeros(n_points) 
 
@@ -43,37 +55,56 @@ def first_order(params:dict, n_points=100):
             a[i, i-1] = -lam
             a[i, i] = 1 + K*dt + 2*lam + mu
             a[i, i+1] = - lam - mu
-            b[i] = concentration_vect[i]
+            
+            # Évaluation et ajout du terme source
+            source_val = 0
+            if f_source is not None:
+                source_val = f_source(temps, r_i)
+                
+            b[i] = concentration_vect[i] + (source_val * dt)
 
         concentration_vect = np.linalg.solve(a, b)
-        temps += dt
+        
+        # Sauvegarde de l'état
+        historique_concentration.append(concentration_vect.copy())
+        vecteur_temps.append(temps)
 
-    return discretization, concentration_vect
+    return discretization, np.array(vecteur_temps), np.array(historique_concentration)
 
 
-def second_order(params:dict, n_points=100):
+def second_order(params:dict, n_points=100, f_source=None, f_exacte=None):
     """
     Schéma de résolution d'ordre 2.
 
     :param params: paramètres du problème
     :param n_points: nombre de noeuds
+    :param f_source: Fonction générant le terme source MMS S(t, r)
+    :param f_exacte: Fonction de la solution exacte MMS pour la condition initiale
     """
     ri = params["RI"]
     ro = params["RO"]
-    s = params["S"]
     ce = params["CE"]
     d_eff = params["D_EFF"]
     K = params["K"]
     dt = params["DT"]
     tf = params["TF"]
 
-
     temps = 0
     discretization = np.linspace(ri, ro, n_points)
     dr = discretization[1] - discretization[0]
-    concentration_vect = np.zeros(n_points)
+
+    # Condition Initiale
+    if f_exacte is not None:
+        concentration_vect = f_exacte(0, discretization)
+    else:
+        concentration_vect = np.zeros(n_points)
+
+    # Historique 2D pour le calcul d'erreur
+    historique_concentration = [concentration_vect.copy()]
+    vecteur_temps = [temps]
 
     while temps < tf:
+        temps += dt # Avancement au temps futur (Schéma implicite)
         
         a = np.zeros((n_points, n_points))
         b = np.zeros(n_points)
@@ -82,7 +113,6 @@ def second_order(params:dict, n_points=100):
         a[0, 1] = 4
         a[0, 2] = -1
         b[0] = 0.0
-
 
         a[-1, -1] = 1
         b[-1] = ce 
@@ -96,24 +126,18 @@ def second_order(params:dict, n_points=100):
             a[i, i-1] = -lam + mu
             a[i, i] = 1 + K*dt + 2*lam
             a[i, i+1] = -lam - mu
-            b[i] = concentration_vect[i]
+            
+            # Évaluation et ajout du terme source
+            source_val = 0
+            if f_source is not None:
+                source_val = f_source(temps, r_i)
+                
+            b[i] = concentration_vect[i] + (source_val * dt)
             
         concentration_vect = np.linalg.solve(a, b)
-        temps += dt
-    return discretization, concentration_vect
-
-def analytique(params:dict, n_points=100):
-    """
-    Solution analytique du problème de diffusion.
-
-    :param params: paramètres du problème
-    :param n_points: nombre de noeuds
-    """
-    ri = params["RI"]
-    ro = params["RO"]
-    s = params["S"]
-    ce = params["CE"]
-    d_eff = params["D_EFF"]
-    discretization = np.linspace(ri, ro, n_points)
-    concentration_vect = 0.25 * s * ro**2 * (discretization**2 / ro**2 - 1) / d_eff + ce
-    return discretization, concentration_vect
+        
+        # Sauvegarde de l'état
+        historique_concentration.append(concentration_vect.copy())
+        vecteur_temps.append(temps)
+        
+    return discretization, np.array(vecteur_temps), np.array(historique_concentration)

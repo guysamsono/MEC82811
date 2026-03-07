@@ -75,7 +75,7 @@ USAGE="Usage: ./src/bash/analyse_auto {nom_du_programme_sans_.py} {chemin_vers_l
     echo "Résultats pour Espace=$res_espace, Temps=$res_temps :" >> src/bash/resultats
 
     # Création d'un fichier temporaire à la racine pour préserver les chemins d'importation (src...)
-    sed -e "s/YYYY/$res_espace/" -e "s/ZZZZ/$res_temps/" $1.py > $1_temp.py
+    sed -e "s/noeuds_spatiaux *= *[0-9]*/noeuds_spatiaux = $res_espace/" -e "s/noeuds_temporels *= *[0-9]*/noeuds_temporels = $res_temps/" $1.py > $1_temp.py
 
     # Exécution du programme Python
     python3 $1_temp.py >> src/bash/resultats

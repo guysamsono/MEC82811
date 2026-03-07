@@ -37,15 +37,20 @@ if __name__ == "__main__":
     )
 
     # Appel du solveur numérique
-    discretisation, concentration_num = first_order(params, noeuds_spatiaux)
-
+    discretisation, tableau_temps, concentration_num_2d = first_order(
+        params, 
+        noeuds_spatiaux, 
+        f_source=f_terme_source, 
+        f_exacte=f_C_exacte
+    )
+    
     # Évaluation de la solution analytique exacte
     # Le solveur actuel (solver.py) retourne la concentration à l'instant final TF
     # On évalue donc la solution MMS exacte à t = TF pour comparer
     concentration_exacte = f_C_exacte(params["TF"], discretisation)
 
     # Calcul de l'erreur
-    erreur_l2 = norm_l2(concentration_num, concentration_exacte)
+    erreur_l2 = norm_l2(concentration_num_2d, concentration_exacte)
 
     # Impression de l'erreur
     print(f"The absolute error = {erreur_l2}")

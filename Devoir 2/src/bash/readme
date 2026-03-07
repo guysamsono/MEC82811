@@ -13,11 +13,11 @@ Ce fichier doit impérativement contenir DEUX colonnes séparées par un espace 
 Assurez-vous qu'il y ait une ligne vide (line break) à la fin du fichier pour que Bash puisse correctement le lire.
 
 **2) Exécution du script :**
-Ouvrez votre terminal et naviguez jusqu'à la racine du devoir 2 (le dossier qui contient le fichier `main_bash.py`).
+Ouvrez votre terminal et naviguez jusqu'à la racine du devoir 2 (le dossier qui contient le fichier `main.py`).
 Lancez l'analyse automatisée avec la commande suivante :
 
-bash src/bash/analyse_auto main_bash src/bash/liste_des_resolutions
+bash src/bash/analyse_auto main src/bash/liste_des_resolutions
 
 **3) Résultats :**
-Le script va modifier dynamiquement les balises YYYY et ZZZZ dans un fichier temporaire, exécuter les simulations, extraire les erreurs absolues et lancer l'analyse en loi de puissance.
+Le script va modifier dynamiquement les valeurs de noeuds_spatiaux et noeuds_temporels dans un fichier temporaire, exécuter les simulations, extraire les erreurs absolues et lancer l'analyse en loi de puissance.
 Le graphique de convergence final sera généré et sauvegardé automatiquement dans le répertoire `results/` à la racine.
