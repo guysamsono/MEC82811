@@ -30,7 +30,7 @@ def generer_mms(params: dict, nt: int, nr: int, afficher_graphiques: bool = Fals
     t, r = sp.symbols('t r')
 
     # Solution manufacturée
-    C_MMS = Ce + 10*sp.exp(-t*0.001)*(1-(r/R)**2)  
+    C_MMS = Ce + 5*sp.exp(-t)*(1-(r/R)**2)**2  
 
     # Calcul des dérivées
     C_t = sp.diff(C_MMS, t)

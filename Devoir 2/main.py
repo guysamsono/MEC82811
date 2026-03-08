@@ -11,10 +11,10 @@ params = {
     "RI": 0,
     "RO": 0.5,
     "S": 2e-8,
-    "D_EFF": 1e-10,
+    "D_EFF": 1e-2,
     "CE": 20,
-    "K": 4e-9,
-    "TF": 100
+    "K": 4e-2,
+    "TF": 1
 }
 
 if __name__ == "__main__":
@@ -37,7 +37,7 @@ if __name__ == "__main__":
     )
 
     # Appel du solveur numérique
-    discretisation, tableau_temps, concentration_num_2d = first_order(
+    discretisation, tableau_temps, concentration_num_2d = second_order(
         params, 
         noeuds_spatiaux, 
         f_source=f_terme_source, 
