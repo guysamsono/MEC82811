@@ -9,6 +9,7 @@ L'objectif est de résoudre l'équation de diffusion en coordonnées cylindrique
 ```text
 .
 ├── README.md           # Documentation du projet
+├── solve.py            # Script résolvant le problème demandé
 ├── main.py             # Script principal de configuration et de simulation
 ├── results/            # Dossier de sortie (généré automatiquement par les scripts)
 └── src/                # Code source du projet
