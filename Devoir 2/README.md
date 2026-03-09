@@ -8,11 +8,11 @@ L'objectif est de résoudre l'équation de diffusion en coordonnées cylindrique
 
 ```text
 .
-├── main.py           # Script principal (lance les simulations et génère les résultats)
-├── src/
-│   ├── solver/       # Contient les algorithmes de résolution (FDM Ordre 1 & 2)
-│   ├── verif/        # Modules de calcul d'erreur et test de symétrie
-│   └── postprocessing/ # Outils de génération de graphiques
-├── results/          # Dossier de sortie (généré automatiquement)
-├── .gitignore        # Fichiers ignorés par Git
-└── README.md         # Documentation du projet
+├── README.md           # Documentation du projet
+├── main.py             # Script principal de configuration et de simulation
+├── results/            # Dossier de sortie (généré automatiquement par les scripts)
+└── src/                # Code source du projet
+    ├── bash/           # Scripts d'automatisation Bash et fichiers de données (résolutions)
+    ├── postprocessing/ # Outils de génération de graphiques additionnels
+    ├── solver/         # Cœur numérique (Solveurs implicites FDM d'ordre 1 et 2)
+    └── verif/          # Outils de vérification (Génération de la MMS et calcul d'erreur L2)
