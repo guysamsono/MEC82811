@@ -326,13 +326,13 @@ if __name__ == "__main__":
 
     from gen_convergence import gen_convergence_func
 
-    seed         = 101
+    seed         = 105
     deltaP       = 0.1
-    NX           = 400
+    NX           = 100
     poro         = 0.9
     mean_fiber_d = 12.5
     std_d        = 2.85
-    dx           = 1e-6
+    dx           = 2e-6
     filename     = 'fiber_mat.tiff'
     ratio = 2
 

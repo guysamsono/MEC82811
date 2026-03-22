@@ -6,6 +6,20 @@ def calcul_p_hat(k_list, ratio):
     p_hat = (np.log((k_list[0]-k_list[1])/(k_list[1]-k_list[2])))/(np.log(ratio))
     return p_hat
 
+def gci_calculation(p_hat,p_f,k_list,ratio):
+    rapport  = np.abs((p_hat-p_f)/p_f)
+    if rapport <= 0.1:
+        Fs = 1.25
+        P = p_f
+    elif rapport > 0.1:
+        Fs = 3.0
+        P = min(max(0.5,p_hat),p_f)
+
+    GCI = Fs/(ratio**P -1)*np.abs(k_list[-2] - k_list[-1])
+
+    return GCI
+    
+
 def gen_convergence_func(ratio, deltaP, NX, poro, mean_fiber_d, std_d, dx, filename, seed=101):
     
     nx_list = [NX/ratio, NX, NX*ratio]
@@ -32,3 +46,5 @@ def gen_convergence_func(ratio, deltaP, NX, poro, mean_fiber_d, std_d, dx, filen
 
     p_hat = calcul_p_hat(k_list, ratio)
     print(f"Estimated order of convergence (p_hat): {p_hat:.2f}")
+    GCI = gci_calculation(p_hat, 2,k_list,ratio)
+    print(f"Estimated Grid Convergence Index: {GCI:.2f}")
