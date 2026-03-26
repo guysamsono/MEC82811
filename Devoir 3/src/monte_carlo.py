@@ -17,11 +17,9 @@ def monte_carlo_func(deltaP, n_runs=100,
     rng = np.random.default_rng(42)
 
     for i in range(n_runs):
-        # Sample uncertain inputs
         mean_fiber_d_i = rng.normal(mean_fiber_d_mean, mean_fiber_d_std)
         poro_i = rng.normal(poro_mean, poro_std)
 
-        # Physical sanity checks
         while mean_fiber_d_i <= 0:
             mean_fiber_d_i = rng.normal(mean_fiber_d_mean, mean_fiber_d_std)
 
@@ -50,20 +48,11 @@ def monte_carlo_func(deltaP, n_runs=100,
             sampled_poro.append(poro_i)
 
     permeabilities = np.array(permeabilities, dtype=float)
-    sampled_mean_d = np.array(sampled_mean_d, dtype=float)
-    sampled_poro = np.array(sampled_poro, dtype=float)
 
-    if len(permeabilities) < 3:
-        raise ValueError("Pas assez de perméabilités valides (>0) pour ajuster une loi log-normale.")
-
+    perm_log = np.log(permeabilities)
     # =========================
-    # Statistiques empiriques
-    # =========================
-    k_mean = np.mean(permeabilities)
-    k_std = np.std(permeabilities, ddof=1)
-    k_var = np.var(permeabilities, ddof=1)
-    k_median = np.median(permeabilities)
-    k_p05, k_p50, k_p95 = np.percentile(permeabilities, [5, 50, 95])
+    k_mean = np.mean(perm_log)
+    k_std = np.std(perm_log, ddof=1)
 
     # =========================
     # Fit log-normal
@@ -71,20 +60,10 @@ def monte_carlo_func(deltaP, n_runs=100,
     # On force loc=0 dans la plupart des cas physiques
     shape, loc, scale = stats.lognorm.fit(permeabilities, floc=0)
 
-    # Paramètres de la lognormale :
-    # si Y = ln(X) ~ N(mu_log, sigma_log)
-    sigma_log = shape
-    mu_log = np.log(scale)
-
-    # Statistiques lognormales théoriques
-    mean_logn = np.exp(mu_log + 0.5 * sigma_log**2)
-    median_logn = np.exp(mu_log)
-    std_logn = np.sqrt((np.exp(sigma_log**2) - 1) * np.exp(2 * mu_log + sigma_log**2))
-
     # Bornes multiplicatives géométriques
-    k_geom_mean = np.exp(mu_log)              # médiane = moyenne géométrique
-    k_minus_1sigma_log = np.exp(mu_log - sigma_log)
-    k_plus_1sigma_log = np.exp(mu_log + sigma_log)
+    k_geom_mean = np.exp(k_mean)              # médiane = moyenne géométrique
+    k_minus_1sigma_log = np.exp(k_mean - k_std)
+    k_plus_1sigma_log = np.exp(k_mean + k_std)
 
     # =========================
     # Vecteurs PDF / CDF
@@ -92,10 +71,10 @@ def monte_carlo_func(deltaP, n_runs=100,
     x_min = permeabilities.min() * 0.90
     x_max = permeabilities.max() * 1.10
     pdf_x = np.linspace(x_min, x_max, 500)
-    pdf_y = stats.lognorm.pdf(pdf_x, s=sigma_log, loc=loc, scale=scale)
+    pdf_y = stats.lognorm.pdf(pdf_x, s=k_std, loc=loc, scale=scale)
 
     cdf_x = np.linspace(x_min, x_max, 500)
-    cdf_y = stats.lognorm.cdf(cdf_x, s=sigma_log, loc=loc, scale=scale)
+    cdf_y = stats.lognorm.cdf(cdf_x, s=k_std, loc=loc, scale=scale)
 
     # ECDF
     ecdf_x = np.sort(permeabilities)
@@ -108,19 +87,11 @@ def monte_carlo_func(deltaP, n_runs=100,
     print(f"Nombre d'échantillons valides = {len(permeabilities)}")
     print(f"Moyenne empirique            = {k_mean:.6e}")
     print(f"Écart-type empirique         = {k_std:.6e}")
-    print(f"Variance empirique           = {k_var:.6e}")
-    print(f"Médiane empirique            = {k_median:.6e}")
-    print(f"P05                          = {k_p05:.6e}")
-    print(f"P50                          = {k_p50:.6e}")
-    print(f"P95                          = {k_p95:.6e}")
     print(f"CV empirique (%)             = {100 * k_std / k_mean:.2f}")
 
     print("\n===== Log-normal fit =====")
-    print(f"mu_log                       = {mu_log:.6e}")
-    print(f"sigma_log                    = {sigma_log:.6e}")
-    print(f"Moyenne lognormale           = {mean_logn:.6e}")
-    print(f"Médiane lognormale           = {median_logn:.6e}")
-    print(f"Écart-type lognormal         = {std_logn:.6e}")
+    print(f"Moyenne lognormale           = {k_mean:.6e}")
+    print(f"Écart-type lognormal         = {k_std:.6e}")
     print(f"exp(mu_log - sigma_log)      = {k_minus_1sigma_log:.6e}")
     print(f"exp(mu_log)                  = {k_geom_mean:.6e}")
     print(f"exp(mu_log + sigma_log)      = {k_plus_1sigma_log:.6e}")
@@ -129,15 +100,13 @@ def monte_carlo_func(deltaP, n_runs=100,
     # Graphe PDF
     # =========================
     plt.figure(figsize=(8, 5))
-    plt.hist(permeabilities, bins=12, density=True, alpha=0.6, label="Histogramme Monte Carlo")
+    plt.hist(permeabilities, bins=20, density=True, alpha=0.6, label="Histogramme Monte Carlo")
     plt.plot(pdf_x, pdf_y, linewidth=2, label="Fit PDF log-normal")
 
     # Lignes verticales
-    plt.axvline(k_median, linestyle='--', linewidth=2, label=f"Médiane emp. = {k_median:.3e}")
     plt.axvline(k_minus_1sigma_log, linestyle=':', linewidth=2, label=f"exp(μlog-σlog) = {k_minus_1sigma_log:.3e}")
     plt.axvline(k_geom_mean, linestyle='-', linewidth=2, label=f"exp(μlog) = {k_geom_mean:.3e}")
     plt.axvline(k_plus_1sigma_log, linestyle=':', linewidth=2, label=f"exp(μlog+σlog) = {k_plus_1sigma_log:.3e}")
-    plt.axvline(k_mean, linestyle='-.', linewidth=2, label=f"Moyenne emp. = {k_mean:.3e}")
 
     plt.xlabel("Perméabilité")
     plt.ylabel("PDF")
@@ -155,11 +124,9 @@ def monte_carlo_func(deltaP, n_runs=100,
     plt.plot(cdf_x, cdf_y, linewidth=2, label="Fit CDF log-normal")
 
     # Lignes verticales
-    plt.axvline(k_median, linestyle='--', linewidth=2, label=f"Médiane emp. = {k_median:.3e}")
     plt.axvline(k_minus_1sigma_log, linestyle=':', linewidth=2, label=f"exp(μlog-σlog) = {k_minus_1sigma_log:.3e}")
     plt.axvline(k_geom_mean, linestyle='-', linewidth=2, label=f"exp(μlog) = {k_geom_mean:.3e}")
     plt.axvline(k_plus_1sigma_log, linestyle=':', linewidth=2, label=f"exp(μlog+σlog) = {k_plus_1sigma_log:.3e}")
-    plt.axvline(k_mean, linestyle='-.', linewidth=2, label=f"Moyenne emp. = {k_mean:.3e}")
 
     plt.xlabel("Perméabilité")
     plt.ylabel("CDF")
@@ -182,19 +149,8 @@ def monte_carlo_func(deltaP, n_runs=100,
         "sampled_mean_d": sampled_mean_d,
         "sampled_poro": sampled_poro,
 
-        "mean_empirical": k_mean,
-        "std_empirical": k_std,
-        "var_empirical": k_var,
-        "median_empirical": k_median,
-        "p05": k_p05,
-        "p50": k_p50,
-        "p95": k_p95,
-
-        "mu_log": mu_log,
-        "sigma_log": sigma_log,
-        "mean_lognormal": mean_logn,
-        "median_lognormal": median_logn,
-        "std_lognormal": std_logn,
+        "moyenne": k_mean,
+        "écart-type": k_std,
 
         "k_minus_1sigma_log": k_minus_1sigma_log,
         "k_geom_mean": k_geom_mean,
