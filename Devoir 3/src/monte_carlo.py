@@ -119,12 +119,9 @@ def monte_carlo_func(deltaP, n_runs=100,
         plt.savefig('results/pdf_monte_carlo.png')
     except FileNotFoundError:
         print('le fichier results/ sera crée')
-
-    plt.show()
-
-    # =========================
-    # Graphe CDF
-    # =========================
+        os.mkdir('results/')
+        plt.savefig('results/pdf_monte_carlo.png')
+    
     plt.figure(figsize=(8, 5))
     plt.step(ecdf_x, ecdf_y, where='post', label="CDF empirique")
     plt.plot(cdf_x, cdf_y, linewidth=2, label="Fit CDF log-normal")
@@ -140,13 +137,13 @@ def monte_carlo_func(deltaP, n_runs=100,
     plt.grid(True, alpha=0.3)
     plt.legend()
     plt.tight_layout()
-    plt.show()
+    try:
+        plt.savefig('results/cdf_monte_carlo.png')
+    except FileNotFoundError:
+        print('le fichier results/ sera crée')
+        os.mkdir('results/')
+        plt.savefig('results/cdf_monte_carlo.png')
 
-    # =========================
-    # Sorties demandées
-    # =========================
-    # FVG = vecteurs du fit PDF
-    # CVG = vecteurs du fit CDF
     FVG = (pdf_x, pdf_y)
     CVG = (cdf_x, cdf_y)
 
