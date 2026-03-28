@@ -326,7 +326,7 @@ def LBM(filename, NX, deltaP, dx, d_equivalent, plot=False):
 
 if __name__ == "__main__":
 
-    from gen_convergence import gen_convergence_func, gen_convergence_mean_func
+    from gen_convergence import gen_convergence_func, gen_convergence_mean_func, plot_domain
     from monte_carlo import monte_carlo_func
 
     seed         = 105
@@ -346,3 +346,4 @@ if __name__ == "__main__":
     #monte_carlo_res = monte_carlo_func(deltaP)
 
     GCI, p_hat = gen_convergence_mean_func(deltaP,nx_list,dx_list,seed_list,poro,mean_fiber_d,std_d,filename)
+    plot_domain(deltaP,nx_list,dx_list,seed_list,poro,mean_fiber_d,std_d,filename)

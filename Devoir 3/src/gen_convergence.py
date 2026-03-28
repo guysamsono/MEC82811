@@ -1,5 +1,7 @@
 import numpy as np
+import os
 import matplotlib.pyplot as plt
+import matplotlib.ticker as mtick
 from lbm_accel import Generate_sample, LBM
 
 def calcul_p_hat(k_list, ratio):
@@ -207,21 +209,29 @@ def gen_convergence_mean_func(deltaP,nx_list,dx_list,seed_list,poro,mean_fiber_d
         f"R² = {r2:.4f}"
     )
 
-    plt.figure(figsize=(7, 5))
-    plt.loglog(x, y, 'o', label="Données")
-    plt.loglog(x, y_fit, '--', label="Régression linéaire")
-    plt.xlabel("dx (μm)")
-    plt.ylabel("Erreur relative sur la perméabilité moyenne (%)")
-    plt.title("Convergence de la perméabilité moyenne")
-    plt.grid(True, which="both")
-    plt.legend()
-    plt.text(
+    fig, ax = plt.subplots(figsize=(7, 5))
+
+    ax.loglog(x, y, 'o', label="Données")
+    ax.loglog(x, y_fit, '--', label="Régression linéaire")
+
+    ax.set_xlabel("dx (μm)")
+    ax.set_ylabel("Erreur relative sur la perméabilité moyenne")
+    ax.set_title("Convergence de la perméabilité moyenne")
+
+    # Affichage de l'axe y en pourcentage
+    ax.yaxis.set_major_formatter(mtick.FormatStrFormatter('%.1f%%'))
+
+    ax.grid(True, which="both")
+    ax.legend()
+
+    ax.text(
         0.05, 0.05, equation_text,
-        transform=plt.gca().transAxes,
+        transform=ax.transAxes,
         fontsize=10,
         verticalalignment='bottom',
         bbox=dict(boxstyle="round", facecolor="white", alpha=0.8)
     )
+
     plt.tight_layout()
     plt.savefig("results/convergence_plot_error.png", dpi=300, bbox_inches="tight")
     plt.show()
@@ -265,4 +275,41 @@ def gen_convergence_mean_func(deltaP,nx_list,dx_list,seed_list,poro,mean_fiber_d
     print(f"Estimated Grid Convergence Index: {GCI:.2f}")
 
     return GCI,p_hat
+
+def plot_domain(deltaP, nx_list, dx_list, seed_list, poro, mean_fiber_d, std_d, filename_base):
+    seed = seed_list[-1]
+
+    os.makedirs("results", exist_ok=True)
+
+    for i, (nx, dx) in enumerate(zip(nx_list, dx_list)):
+        dx_um = dx * 1e6
+        domain_um = nx * dx_um
+
+        tiff_name = f"results/{filename_base}_nx{nx}_dx{dx_um:.2f}um.tiff"
+
+        d_equivalent = Generate_sample(
+            seed=seed,
+            filename=tiff_name,
+            mean_d=mean_fiber_d,
+            std_d=std_d,
+            poro=poro,
+            nx=int(nx),
+            dx=dx,
+            plot=True
+        )
+
+        fig = plt.gcf()
+        ax = plt.gca()
+
+        title = (
+            f"Structure générée\n"
+            f"nx = {nx}, dx = {dx_um:.2f} µm, L = {domain_um:.2f} µm\n"
+            f"Porosité cible = {poro:.3f}, d_eq = {d_equivalent:.3f} µm"
+        )
+        ax.set_title(title)
+
+        png_name = f"results/{filename_base}_nx{nx}_dx{dx_um:.2f}um.png"
+        fig.savefig(png_name, dpi=300, bbox_inches="tight")
+
+        plt.close(fig)
             
