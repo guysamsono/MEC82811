@@ -326,8 +326,9 @@ def LBM(filename, NX, deltaP, dx, d_equivalent, plot=False):
 
 if __name__ == "__main__":
 
-    from gen_convergence import gen_convergence_func, gen_convergence_mean_func
-    from monte_carlo import monte_carlo_func
+    from src.gen_convergence import gen_convergence_func, gen_convergence_mean_func
+    from src.monte_carlo import monte_carlo_func
+    from src.experimental import experimental
 
     seed         = 105
     deltaP       = 0.1
@@ -337,12 +338,68 @@ if __name__ == "__main__":
     std_d        = 2.85
     dx           = 2e-6
     filename     = 'fiber_mat.tiff'
-    ratio = 2
 
     nx_list = [50,75,100,150,200]
     dx_list = [4e-6,(4e-6)/1.5,2e-6,2e-6/1.5,1e-6]
     seed_list = [1,2,8,54,23,85,100,64]
 
-    #monte_carlo_res = monte_carlo_func(deltaP)
+    # --- PARTIE A : Incertitude numérique (u_num) ---
+    GCI, p_hat = gen_convergence_mean_func(deltaP, nx_list, dx_list, seed_list, poro, mean_fiber_d, std_d, filename)
 
-    GCI, p_hat = gen_convergence_mean_func(deltaP,nx_list,dx_list,seed_list,poro,mean_fiber_d,std_d,filename)
+    print("\n" + "="*40)
+    print("RÉSULTATS V&V20")
+    print("="*40)
+    print(f"[Partie A] GCI : {GCI:.2f} µm²")
+
+    # plot_domain(deltaP,nx_list,dx_list,seed_list,poro,mean_fiber_d,std_d,filename)
+
+    # --- PARTIE B : Incertitude des données d'entrée (u_input) ---
+    monte_carlo_res = monte_carlo_func(deltaP)
+
+    # --- PARTIE C : Incertitude des données expérimentales (u_D) ---
+    u_reproductibilite = 14.7
+    u_permeametre = 10.0
+    u_D = experimental(u_reproductibilite, u_permeametre)
+
+    print(f"[Partie C] Incertitude expérimentale u_D : {u_D:.2f} µm²")
+
+    # --- PARTIE D : Erreur de la simulation (E) ---
+    S = monte_carlo_res["k_geom_mean"]
+    D = 80.6
+    E = S - D
+
+    print(f"[Partie D] Solution numérique S (médiane) : {S:.2f} µm²")
+    print(f"[Partie D] Valeur expérimentale D (médiane) : {D:.2f} µm²")
+    print(f"[Partie D] Erreur de simulation E : {E:.2f} µm²")
+
+    # --- PARTIE E : Erreur du modèle et validation ---
+    u_num = GCI 
+
+    # 1. Incertitudes d'entrée asymétriques (distribution log-normale)
+    k_minus = monte_carlo_res["k_minus_1sigma_log"]
+    k_plus = monte_carlo_res["k_plus_1sigma_log"]
+    
+    # On calcule l'écart par rapport à la médiane (S) 
+    u_input_minus = S - k_minus
+    u_input_plus = k_plus - S
+
+    # 2. Calcul des incertitudes de validation combinées u_val 
+    u_val_minus = np.sqrt(u_num**2 + u_input_minus**2 + u_D**2)
+    u_val_plus = np.sqrt(u_num**2 + u_input_plus**2 + u_D**2)
+
+    # 3. Intervalle de confiance à 95.4% (k = 2) 
+    k_cov = 2
+    interval_min = E - k_cov * u_val_minus
+    interval_max = E + k_cov * u_val_plus
+
+    print(f"\n[Partie E] Incertitude de validation (u_val-) : {u_val_minus:.2f} µm²")
+    print(f"[Partie E] Incertitude de validation (u_val+) : {u_val_plus:.2f} µm²")
+    print(f"\n[Partie E] Intervalle de delta_model : [{interval_min:.2f} , {interval_max:.2f}] µm²")
+
+    # 4. Conclusion
+    print("\n--- CONCLUSION ---")
+    if interval_min <= 0 <= interval_max:
+        print("Le modèle EST VALIDÉ ! (0 est compris dans l'intervalle)")
+    else:
+        print("Le modèle N'EST PAS VALIDÉ. (0 est à l'extérieur de l'intervalle)")
+        print("Piste d'amélioration à rapporter : Le modèle 2D est une simplification (les fibres ne sont pas toutes parallèles). L'erreur provient majoritairement de l'hypothèse de coupe transversale.")
