@@ -159,7 +159,8 @@ def gen_convergence_func(ratio, deltaP, NX, poro, mean_fiber_d, std_d, dx, filen
 
 def gen_convergence_mean_func(deltaP,nx_list,dx_list,seed_list,poro,mean_fiber_d,std_d,filename):
     import os
-    os.makedirs("results", exist_ok=True)
+    dossier_courant = os.path.dirname(os.path.abspath(__file__))
+    os.makedirs(os.path.join(dossier_courant, "results"), exist_ok=True)
 
     k_mean_list = []
     k_std_list = []
@@ -279,7 +280,8 @@ def gen_convergence_mean_func(deltaP,nx_list,dx_list,seed_list,poro,mean_fiber_d
 def plot_domain(deltaP, nx_list, dx_list, seed_list, poro, mean_fiber_d, std_d, filename_base):
     seed = seed_list[-1]
 
-    os.makedirs("results", exist_ok=True)
+    dossier_courant = os.path.dirname(os.path.abspath(__file__))
+    os.makedirs(os.path.join(dossier_courant, "results"), exist_ok=True)
 
     for i, (nx, dx) in enumerate(zip(nx_list, dx_list)):
         dx_um = dx * 1e6
