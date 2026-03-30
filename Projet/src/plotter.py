@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 
-def temperature_plotter(T ,input_dict):
+def temperature_plotter(T ,input_dict, filename='temperature_field.png'):
 
     a = input_dict['a']
     b = input_dict['b']
@@ -21,12 +21,14 @@ def temperature_plotter(T ,input_dict):
     plt.ylabel('y')
     plt.title('Temperature distribution')
     
+    file_path = os.path.join('results', filename)
+    
     try:
-        plt.savefig('results/temperature_field.png')
+        plt.savefig(file_path)
 
     except Exception as err:
         print(f'{err},le classeur results/sera crée')
         os.mkdir('results/')
-        plt.savefig('results/temperature_field.png')
+        plt.savefig(file_path)
 
 
