@@ -1,5 +1,5 @@
 from src.solver import solver_first_order, solver_second_order
-from src.plotter import temperature_plotter
+from src.plotter import temperature_plotter, error_plotter, one_dimension_plotter
 import numpy as np
 
 def test_symmetrie(order, input_dict):
@@ -25,8 +25,33 @@ def test_symmetrie(order, input_dict):
     else:
         t_sym = solver_second_order(input_dict, True)
         temperature_plotter(t_sym, input_dict, 'symmetrised_domain_test_second_order.png')
-        
-    l2_norm = np.linalg.norm(t_normal_order - t_sym[ny0*input_dict['nx']:ny0**2*input_dict['nx']])
+
+    error = t_normal_order - t_sym[ny0*input_dict['nx']:ny0**2*input_dict['nx']]
+    l2_norm = np.linalg.norm(error)
     print(f"norme L2 de l'erreur sur le domaine symétrisé: {l2_norm}")
+
+    input_dict['c'] = c0
+    input_dict['ny'] = ny0
+
+    error_plotter(error, input_dict, 'symetry_error_field.png')
+
+    plot_dict = {
+    'xlabel': 'y',
+    'ylabel': 'Temperature',
+    'title': 'Temperature distribution along y-axis for symmetry test at middle of the domain',
+    'label': 'Temperature on half domain'
+    }
+
+    nx = input_dict['nx']
+    ny = input_dict['ny']
+
+    t_normal_order_reshaped = t_normal_order.reshape((ny, nx))
+    t_sym_reshaped = t_sym.reshape((2 * ny0, nx))
+    y = np.linspace(0, input_dict['c'], ny)
+    j_mid = nx // 2
+
+    one_dimension_plotter(y, t_normal_order_reshaped[:, j_mid], plot_dict, last_graph=False, filename='symmetry_1d.png')
+    plot_dict['label'] = 'Temperature on symmetrised domain'
+    one_dimension_plotter(y, np.flip(t_sym_reshaped[:ny0, j_mid]), plot_dict, last_graph=True, filename='symmetry_1d.png')
 
     return
