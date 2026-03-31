@@ -15,7 +15,8 @@ def solver_first_order(input_dict, sym_test = False):
     u = input_dict['u']
     temp_a = input_dict['temp_a']
     temp_b = input_dict['temp_b']
-    q = input_dict['q']
+    h = input_dict['h']
+    tinf = input_dict['tinf']
 
     x = np.linspace(a, b, nx)
     y = np.linspace(a, c, ny)
@@ -40,10 +41,10 @@ def solver_first_order(input_dict, sym_test = False):
                 rhs[k] = temp_b
 
             elif sym_test and i == 0:
-                #application condition de neumman (symmétrie)
-                A[k,k] = 1
-                A[k, k+nx] = -1
-                rhs[k] = dy*q
+                #application condition de robin
+                A[k,k] = -(h*dy + kappa)
+                A[k, k+nx] = kappa
+                rhs[k] = -dy*h*tinf
 
             elif not sym_test and i == 0:
                 #application condition de neumman (symmétrie)
@@ -51,10 +52,10 @@ def solver_first_order(input_dict, sym_test = False):
                 A[k, k+nx] = -1
 
             elif i == ny-1:
-                #application condition de neumman
-                A[k,k] = 1
-                A[k, k-nx] = -1
-                rhs[k] = dy*q
+                #application condition de robin
+                A[k, k] = kappa + h*dy
+                A[k, k-nx] = -kappa
+                rhs[k] = h*dy*tinf
 
             else:
                 #noeud intérieur
@@ -83,7 +84,8 @@ def solver_second_order(input_dict, sym_test = False):
     u = input_dict['u']
     temp_a = input_dict['temp_a']
     temp_b = input_dict['temp_b']
-    q = input_dict['q']
+    h = input_dict['h']
+    tinf = input_dict['tinf']
 
     x = np.linspace(a, b, nx)
     y = np.linspace(a, c, ny)
@@ -115,17 +117,17 @@ def solver_second_order(input_dict, sym_test = False):
             
             elif sym_test and i == 0:
                 #application condition de robin
-                A[k,k] = -3
-                A[k, k+nx] = 4
-                A[k, k+2*nx] = -1
-                rhs[k] = -2*dy*q
+                A[k, k] = -3*kappa - 2*dy*h
+                A[k, k+nx] =  4*kappa
+                A[k, k+2*nx] = -1*kappa
+                rhs[k] = -2*dy*h*tinf
 
             elif i == ny-1:
                 #application condition de robin
-                A[k,k] = 3
-                A[k, k-nx] = -4
-                A[k, k-2*nx] = 1
-                rhs[k] = 2*dy*q
+                A[k, k] =  3*kappa + 2*dy*h
+                A[k, k-nx] = -4*kappa
+                A[k, k-2*nx] =  1*kappa
+                rhs[k] =  2*dy*h*tinf
 
             else:
                 #noeud intérieur

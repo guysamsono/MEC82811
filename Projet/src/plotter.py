@@ -22,7 +22,7 @@ def temperature_plotter(T ,input_dict, filename='temperature_field.png'):
     plt.title('Temperature distribution')
     
     file_path = os.path.join('results', filename)
-    
+
     try:
         plt.savefig(file_path)
 
@@ -30,5 +30,8 @@ def temperature_plotter(T ,input_dict, filename='temperature_field.png'):
         print(f'{err},le classeur results/sera crée')
         os.mkdir('results/')
         plt.savefig(file_path)
+
+    plt.close()
+    return
 
 
