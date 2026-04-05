@@ -50,8 +50,10 @@ def test_symmetrie(order, input_dict):
     y = np.linspace(0, input_dict['c'], ny)
     j_mid = nx // 2
 
-    one_dimension_plotter(y, t_normal_order_reshaped[:, j_mid], plot_dict, last_graph=False, filename='symmetry_1d.png')
+    one_dimension_plotter(y, t_normal_order_reshaped[:, j_mid], plot_dict, last_graph=False, color='blue', filename='symmetry_1d.png')
     plot_dict['label'] = 'Temperature on symmetrised domain'
-    one_dimension_plotter(y, np.flip(t_sym_reshaped[:ny0, j_mid]), plot_dict, last_graph=True, filename='symmetry_1d.png')
-
+    one_dimension_plotter(y, np.flip(t_sym_reshaped[:ny0, j_mid]), plot_dict, last_graph=True, color='red', filename='symmetry_1d.png')
+    
+    y2 = np.linspace(0, 2*input_dict['c'], 2*ny)
+    one_dimension_plotter(y2, t_sym_reshaped[:, j_mid], plot_dict, last_graph=True, color='green', filename='symmetry_1d_full.png')
     return

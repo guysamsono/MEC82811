@@ -66,9 +66,9 @@ def error_plotter(error, input_dict, filename='error_field.png'):
     plt.close()
     return
 
-def one_dimension_plotter(x, y, plot_dict, last_graph=False, filename='one_dimension_plot_group.png'):
+def one_dimension_plotter(x, y, plot_dict, last_graph=False, color='blue', filename='one_dimension_plot_group.png'):
 
-    plt.plot(x, y, label=f'{plot_dict["label"]}')
+    plt.plot(x, y, label=f'{plot_dict["label"]}', color=color)
     plt.xlabel(plot_dict["xlabel"])
     plt.ylabel(plot_dict["ylabel"])
     plt.title(plot_dict["title"])
