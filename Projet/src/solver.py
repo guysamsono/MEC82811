@@ -1,11 +1,17 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+def speed_function(c,d, y):
+
+    speed = (3*d)/(4*c)*(1 - (y/c)**2)
+
+    return speed 
+
 def solver_first_order(input_dict, sym_test = False):
 
-    a = input_dict['a']
     b = input_dict['b']
     c = input_dict['c']
+    d = input_dict['d']
     nx = input_dict['nx']
     ny = input_dict['ny']
     rho = input_dict['rho']
@@ -18,8 +24,11 @@ def solver_first_order(input_dict, sym_test = False):
     h = input_dict['h']
     tinf = input_dict['tinf']
 
-    x = np.linspace(a, b, nx)
-    y = np.linspace(a, c, ny)
+    x = np.linspace(0, b, nx)
+    if sym_test:
+        y = np.linspace(-c, c, ny)
+    else:
+        y = np.linspace(0, c, ny)
     dx = x[1] - x[0]
     dy = y[1] - y[0]
 
@@ -59,6 +68,7 @@ def solver_first_order(input_dict, sym_test = False):
 
             else:
                 #noeud intérieur
+                u = speed_function(c, d, y[i])
                 A[k, k-1] = (rho*cp*u/dx + kappa/dx**2)
                 A[k, k] = (-rho*cp*u/dx - 2*kappa/dx**2 - 2*kappa/dy**2)
                 A[k, k+1] = kappa/dx**2
@@ -72,9 +82,9 @@ def solver_first_order(input_dict, sym_test = False):
 
 def solver_second_order(input_dict, sym_test = False):
 
-    a = input_dict['a']
     b = input_dict['b']
     c = input_dict['c']
+    d = input_dict['d']
     nx = input_dict['nx']
     ny = input_dict['ny']
     rho = input_dict['rho']
@@ -87,8 +97,11 @@ def solver_second_order(input_dict, sym_test = False):
     h = input_dict['h']
     tinf = input_dict['tinf']
 
-    x = np.linspace(a, b, nx)
-    y = np.linspace(a, c, ny)
+    x = np.linspace(0, b, nx)
+    if sym_test:
+        y = np.linspace(-c, c, ny)
+    else:
+        y = np.linspace(0, c, ny)
     dx = x[1] - x[0]
     dy = y[1] - y[0]
 
@@ -131,6 +144,7 @@ def solver_second_order(input_dict, sym_test = False):
 
             else:
                 #noeud intérieur
+                u = speed_function(c, d, y[i])
                 A[k, k-1] = (rho*cp*u/dx + kappa/dx**2)
                 A[k, k] = (-rho*cp*u/dx - 2*kappa/dx**2 - 2*kappa/dy**2)
                 A[k, k+1] = kappa/dx**2

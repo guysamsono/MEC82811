@@ -1,11 +1,11 @@
 def gen_input():
     
-    input = {
-        'a':0,              #borne inférieure du domaine (x)
-        'b':20,             #borne supérieure du domaine (x)
+    input = {           
+        'b':20,             #longueur du domaine (x)
         'c':4,              #demi-largeur du domaine (y)  
-        'nx':100,            #nombre de points de discrétisation en x
-        'ny':20,            #nombre de points de discrétisation en y
+        'd':10,             #débit par unité de longueur (m^2/s) 
+        'nx':100,           #nombre de points de discrétisation en x
+        'ny':50,            #nombre de points de discrétisation en y
         'rho':1,            #densité
         'cp':1,             #chaleur spécifique
         'k':1,              #conductivité thermique

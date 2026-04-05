@@ -2,16 +2,19 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 
-def temperature_plotter(T ,input_dict, filename='temperature_field.png'):
+def temperature_plotter(T ,input_dict, filename='temperature_field.png', sym_test=False):
 
-    a = input_dict['a']
     b = input_dict['b']
     c = input_dict['c']
     nx = input_dict['nx']
     ny = input_dict['ny']
 
-    x = np.linspace(a, b, nx)
-    y = np.linspace(a, c, ny)
+    if sym_test:
+        y = np.linspace(-c, c, ny)
+    else:
+        y = np.linspace(0, c, ny)
+
+    x = np.linspace(0, b, nx)
 
     T = T.reshape((ny, nx))
     plt.contourf(x, y, T, 100, cmap='hot')
@@ -36,14 +39,13 @@ def temperature_plotter(T ,input_dict, filename='temperature_field.png'):
 
 def error_plotter(error, input_dict, filename='error_field.png'):
 
-    a = input_dict['a']
     b = input_dict['b']
     c = input_dict['c']
     nx = input_dict['nx']
     ny = input_dict['ny']
 
-    x = np.linspace(a, b, nx)
-    y = np.linspace(a, c, ny)
+    x = np.linspace(0, b, nx)
+    y = np.linspace(0, c, ny)
 
     error = error.reshape((ny, nx))
     plt.contourf(x, y, error, 100, cmap='viridis')
