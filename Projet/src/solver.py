@@ -1,11 +1,54 @@
 import numpy as np
-import matplotlib.pyplot as plt
+from scipy.sparse import lil_matrix
+from scipy.sparse.linalg import spsolve
 
 def speed_function(c,d, y):
 
     speed = (3*d)/(4*c)*(1 - (y/c)**2)
 
     return speed 
+
+def compute_conservation_of_energy(T, input_dict):
+    ny = input_dict['ny']
+    nx = input_dict['nx']
+    kappa = input_dict['k']
+    rho = input_dict['rho']
+    cp = input_dict['cp']
+    b = input_dict['b']
+    c = input_dict['c']
+    d = input_dict['d']
+    f = input_dict['f']
+
+    T = np.asarray(T).reshape((ny, nx))
+
+    dx = b / (nx - 1)
+    dy = c / (ny - 1)
+
+    total_flux_conservation = 0.0
+
+    for j in range(ny):
+        u = speed_function(c, d, j * dy)
+        outward_diff = kappa * (T[j,1] - T[j,0]) / dx * dy
+        outward_conv = -rho*cp*u * T[j,0] * dy
+        total_flux_conservation += outward_diff + outward_conv
+
+    for j in range(ny):
+        u = speed_function(c, d, j * dy)
+        outward_diff = -kappa * (T[j,-1] - T[j,-2]) / dx * dy
+        outward_conv = +rho*cp*u * T[j,-1] * dy
+        total_flux_conservation += outward_diff + outward_conv
+
+    for i in range(nx):
+        outward_diff = kappa * (T[1,i] - T[0,i]) / dy * dx
+        total_flux_conservation += outward_diff
+
+    for i in range(nx):
+        outward_diff = -kappa * (T[-1,i] - T[-2,i]) / dy * dx
+        total_flux_conservation += outward_diff
+
+    total_flux_conservation -= f * b * c
+
+    return total_flux_conservation
 
 def solver_first_order(input_dict, sym_test = False):
 
@@ -32,7 +75,8 @@ def solver_first_order(input_dict, sym_test = False):
     dx = x[1] - x[0]
     dy = y[1] - y[0]
 
-    A = np.zeros((nx*ny, nx*ny))
+    N = nx * ny
+    A = lil_matrix((N, N))
     rhs = np.zeros(nx*ny)
 
     for i in range(ny):
@@ -76,7 +120,8 @@ def solver_first_order(input_dict, sym_test = False):
                 A[k, k+nx] = kappa/dy**2 
                 rhs[k] = -f
             
-    T = np.linalg.solve(A, rhs)
+    A = A.tocsr()
+    T = spsolve(A, rhs)
 
     return T
 
@@ -105,7 +150,8 @@ def solver_second_order(input_dict, sym_test = False):
     dx = x[1] - x[0]
     dy = y[1] - y[0]
 
-    A = np.zeros((nx*ny, nx*ny))
+    N = nx * ny
+    A = lil_matrix((N, N))
     rhs = np.zeros(nx*ny)
 
     for i in range(ny):
@@ -152,6 +198,7 @@ def solver_second_order(input_dict, sym_test = False):
                 A[k, k+nx] = kappa/dy**2 
                 rhs[k] = -f
             
-    T = np.linalg.solve(A, rhs)
+    A = A.tocsr()
+    T = spsolve(A, rhs)
 
     return T
