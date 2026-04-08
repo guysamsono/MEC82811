@@ -1,0 +1,204 @@
+import numpy as np
+from scipy.sparse import lil_matrix
+from scipy.sparse.linalg import spsolve
+
+def speed_function(c,d, y):
+
+    speed = (3*d)/(4*c)*(1 - (y/c)**2)
+
+    return speed 
+
+def compute_conservation_of_energy(T, input_dict):
+    ny = input_dict['ny']
+    nx = input_dict['nx']
+    kappa = input_dict['k']
+    rho = input_dict['rho']
+    cp = input_dict['cp']
+    b = input_dict['b']
+    c = input_dict['c']
+    d = input_dict['d']
+    f = input_dict['f']
+
+    T = np.asarray(T).reshape((ny, nx))
+
+    dx = b / (nx - 1)
+    dy = c / (ny - 1)
+
+    total_flux_conservation = 0.0
+
+    for j in range(ny):
+        u = speed_function(c, d, j * dy)
+        outward_diff = kappa * (T[j,1] - T[j,0]) / dx * dy
+        outward_conv = -rho*cp*u * T[j,0] * dy
+        total_flux_conservation += outward_diff + outward_conv
+
+    for j in range(ny):
+        u = speed_function(c, d, j * dy)
+        outward_diff = -kappa * (T[j,-1] - T[j,-2]) / dx * dy
+        outward_conv = +rho*cp*u * T[j,-1] * dy
+        total_flux_conservation += outward_diff + outward_conv
+
+    for i in range(nx):
+        outward_diff = kappa * (T[1,i] - T[0,i]) / dy * dx
+        total_flux_conservation += outward_diff
+
+    for i in range(nx):
+        outward_diff = -kappa * (T[-1,i] - T[-2,i]) / dy * dx
+        total_flux_conservation += outward_diff
+
+    total_flux_conservation -= f * b * c
+
+    return total_flux_conservation
+
+def solver_first_order(input_dict, sym_test = False):
+
+    b = input_dict['b']
+    c = input_dict['c']
+    d = input_dict['d']
+    nx = input_dict['nx']
+    ny = input_dict['ny']
+    rho = input_dict['rho']
+    cp = input_dict['cp']
+    kappa = input_dict['k']
+    f = input_dict['f']
+    u = input_dict['u']
+    temp_a = input_dict['temp_a']
+    temp_b = input_dict['temp_b']
+    h = input_dict['h']
+    tinf = input_dict['tinf']
+
+    x = np.linspace(0, b, nx)
+    if sym_test:
+        y = np.linspace(-c, c, ny)
+    else:
+        y = np.linspace(0, c, ny)
+    dx = x[1] - x[0]
+    dy = y[1] - y[0]
+
+    N = nx * ny
+    A = lil_matrix((N, N))
+    rhs = np.zeros(nx*ny)
+
+    for i in range(ny):
+        for j in range(nx):
+            k = i * nx + j 
+            
+            if j == 0:
+                #application d'une condition de dirichlet
+                A[k,k] = 1
+                rhs[k] = temp_a
+            
+            elif j == nx-1:
+                #application d'une condition de dirichlet
+                A[k,k] = 1
+                rhs[k] = temp_b
+
+            elif sym_test and i == 0:
+                #application condition de robin
+                A[k,k] = -(h*dy + kappa)
+                A[k, k+nx] = kappa
+                rhs[k] = -dy*h*tinf
+
+            elif not sym_test and i == 0:
+                #application condition de neumman (symmétrie)
+                A[k,k] = 1
+                A[k, k+nx] = -1
+
+            elif i == ny-1:
+                #application condition de robin
+                A[k, k] = kappa + h*dy
+                A[k, k-nx] = -kappa
+                rhs[k] = h*dy*tinf
+
+            else:
+                #noeud intérieur
+                u = speed_function(c, d, y[i])
+                A[k, k-1] = (rho*cp*u/dx + kappa/dx**2)
+                A[k, k] = (-rho*cp*u/dx - 2*kappa/dx**2 - 2*kappa/dy**2)
+                A[k, k+1] = kappa/dx**2
+                A[k, k-nx] = kappa/dy**2
+                A[k, k+nx] = kappa/dy**2 
+                rhs[k] = -f
+            
+    A = A.tocsr()
+    T = spsolve(A, rhs)
+
+    return T
+
+def solver_second_order(input_dict, sym_test = False):
+
+    b = input_dict['b']
+    c = input_dict['c']
+    d = input_dict['d']
+    nx = input_dict['nx']
+    ny = input_dict['ny']
+    rho = input_dict['rho']
+    cp = input_dict['cp']
+    kappa = input_dict['k']
+    f = input_dict['f']
+    u = input_dict['u']
+    temp_a = input_dict['temp_a']
+    temp_b = input_dict['temp_b']
+    h = input_dict['h']
+    tinf = input_dict['tinf']
+
+    x = np.linspace(0, b, nx)
+    if sym_test:
+        y = np.linspace(-c, c, ny)
+    else:
+        y = np.linspace(0, c, ny)
+    dx = x[1] - x[0]
+    dy = y[1] - y[0]
+
+    N = nx * ny
+    A = lil_matrix((N, N))
+    rhs = np.zeros(nx*ny)
+
+    for i in range(ny):
+        for j in range(nx):
+            k = i * nx + j 
+            
+            if j == 0:
+                #application d'une condition de dirichlet
+                A[k,k] = 1
+                rhs[k] = temp_a
+            
+            elif j == nx-1:
+                #application d'une condition de dirichlet
+                A[k,k] = 1
+                rhs[k] = temp_b
+
+            elif not sym_test and i == 0:
+                #application condition de neumman (symmétrie)
+                A[k,k] = -3
+                A[k, k+nx] = 4
+                A[k, k+2*nx] = -1
+            
+            elif sym_test and i == 0:
+                #application condition de robin
+                A[k, k] = -3*kappa - 2*dy*h
+                A[k, k+nx] =  4*kappa
+                A[k, k+2*nx] = -1*kappa
+                rhs[k] = -2*dy*h*tinf
+
+            elif i == ny-1:
+                #application condition de robin
+                A[k, k] =  3*kappa + 2*dy*h
+                A[k, k-nx] = -4*kappa
+                A[k, k-2*nx] =  1*kappa
+                rhs[k] =  2*dy*h*tinf
+
+            else:
+                #noeud intérieur
+                u = speed_function(c, d, y[i])
+                A[k, k-1] = (rho*cp*u/dx + kappa/dx**2)
+                A[k, k] = (-rho*cp*u/dx - 2*kappa/dx**2 - 2*kappa/dy**2)
+                A[k, k+1] = kappa/dx**2
+                A[k, k-nx] = kappa/dy**2
+                A[k, k+nx] = kappa/dy**2 
+                rhs[k] = -f
+            
+    A = A.tocsr()
+    T = spsolve(A, rhs)
+
+    return T
