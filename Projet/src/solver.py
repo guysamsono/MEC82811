@@ -145,7 +145,8 @@ def solver_first_order(input_dict, sym_test = False, source_mms = None,
 
     return T
 
-def solver_second_order(input_dict, sym_test = False, source_mms = None):
+def solver_second_order(input_dict, sym_test = False, source_mms = None,
+                        bc_left=None, bc_right=None, bc_bottom=None, bc_top_tinf=None):
 
     b = input_dict['b']
     c = input_dict['c']
@@ -181,18 +182,31 @@ def solver_second_order(input_dict, sym_test = False, source_mms = None):
             if j == 0:
                 #application d'une condition de dirichlet
                 A[k,k] = 1
-                rhs[k] = temp_a
+                if bc_left is None:
+                    rhs[k] = temp_a
+                else:
+                    rhs[k] = bc_left(y[i])
             
             elif j == nx-1:
                 #application d'une condition de dirichlet
                 A[k,k] = 1
-                rhs[k] = temp_b
+                if bc_right is None:
+                    rhs[k] = temp_b
+                else:
+                    rhs[k] = bc_right(y[i])
 
             elif not sym_test and i == 0:
                 #application condition de neumman (symmétrie)
-                A[k,k] = -3
-                A[k, k+nx] = 4
-                A[k, k+2*nx] = -1
+                if bc_bottom is None:
+                    A[k,k] = -3
+                    A[k, k+nx] = 4
+                    A[k, k+2*nx] = -1
+                    rhs[k] = 0
+                else:
+                    A[k, k] = -3.0 / (2*dy)
+                    A[k, k + nx] = 4.0 / (2*dy)
+                    A[k, k + 2*nx] = -1.0 / (2*dy)
+                    rhs[k] = bc_bottom(x[j])
             
             elif sym_test and i == 0:
                 #application condition de robin
@@ -206,7 +220,10 @@ def solver_second_order(input_dict, sym_test = False, source_mms = None):
                 A[k, k] =  3*kappa + 2*dy*h
                 A[k, k-nx] = -4*kappa
                 A[k, k-2*nx] =  1*kappa
-                rhs[k] =  2*dy*h*tinf
+                if bc_top_tinf is None:
+                    rhs[k] =  2*dy*h*tinf
+                else:
+                    rhs[k] =  2*dy*h*bc_top_tinf(x[j])
 
             else:
                 #noeud intérieur
@@ -216,7 +233,10 @@ def solver_second_order(input_dict, sym_test = False, source_mms = None):
                 A[k, k+1] = kappa/dx**2
                 A[k, k-nx] = kappa/dy**2
                 A[k, k+nx] = kappa/dy**2 
-                rhs[k] = -f
+                if source_mms is None:
+                    rhs[k] = -f
+                else:
+                    rhs[k] = -(f + source_mms(x[j], y[i]))
             
     A = A.tocsr()
     T = spsolve(A, rhs)
@@ -231,7 +251,7 @@ def mms_Temperature(input_dict, MMS_func):
 
     x = np.linspace(0,b,nx)
     y = np.linspace(0,c,ny)
-    
+
     T_mms_vec = np.zeros(nx*ny)
 
     for i in range(ny):
