@@ -17,6 +17,8 @@ def temperature_plotter(T ,input_dict, filename='temperature_field.png', sym_tes
     x = np.linspace(0, b, nx)
 
     T = T.reshape((ny, nx))
+
+    plt.figure(figsize=(8, 4))
     plt.contourf(x, y, T, 100, cmap='hot')
     plt.gca().set_aspect('equal', adjustable='box')
     plt.colorbar(label='Temperature')
@@ -48,6 +50,8 @@ def error_plotter(error, input_dict, filename='error_field.png'):
     y = np.linspace(0, c, ny)
 
     error = error.reshape((ny, nx))
+
+    plt.figure(figsize=(8, 4))
     plt.contourf(x, y, error, 100, cmap='viridis')
     plt.gca().set_aspect('equal', adjustable='box')
     plt.colorbar(label='Error')

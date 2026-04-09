@@ -9,7 +9,7 @@ def gen_input():
         'rho':1,            #densité
         'cp':1,             #chaleur spécifique
         'k':1,              #conductivité thermique
-        'f':10,             #therme source
+        'f':10,             #terme source
         'u':1,              #vitesse
         'temp_a':100,       #température à la borne a
         'temp_b':100,       #température à la borne b

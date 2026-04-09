@@ -50,7 +50,8 @@ def compute_conservation_of_energy(T, input_dict):
 
     return total_flux_conservation
 
-def solver_first_order(input_dict, sym_test = False):
+def solver_first_order(input_dict, sym_test = False, source_mms = None,
+                       bc_left=None, bc_right=None, bc_bottom=None, bc_top_tinf=None ):
 
     b = input_dict['b']
     c = input_dict['c']
@@ -86,12 +87,18 @@ def solver_first_order(input_dict, sym_test = False):
             if j == 0:
                 #application d'une condition de dirichlet
                 A[k,k] = 1
-                rhs[k] = temp_a
+                if bc_left is None:
+                    rhs[k] = temp_a
+                else:
+                    rhs[k] = bc_left(y[i])
             
             elif j == nx-1:
                 #application d'une condition de dirichlet
                 A[k,k] = 1
-                rhs[k] = temp_b
+                if bc_right is None:
+                    rhs[k] = temp_b
+                else:
+                    rhs[k] = bc_right(y[i])
 
             elif sym_test and i == 0:
                 #application condition de robin
@@ -101,14 +108,24 @@ def solver_first_order(input_dict, sym_test = False):
 
             elif not sym_test and i == 0:
                 #application condition de neumman (symmétrie)
-                A[k,k] = 1
-                A[k, k+nx] = -1
+                if bc_bottom is None:
+                    A[k,k] = 1
+                    A[k, k+nx] = -1
+                    rhs[k] = 0
+                else:
+                    A[k, k] = -1.0 / dy
+                    A[k, k + nx] = 1.0 / dy
+                    rhs[k] = bc_bottom(x[j])
+                    
 
             elif i == ny-1:
                 #application condition de robin
                 A[k, k] = kappa + h*dy
                 A[k, k-nx] = -kappa
-                rhs[k] = h*dy*tinf
+                if bc_top_tinf is None:
+                    rhs[k] = h*dy*tinf
+                else:
+                    rhs[k] = h*dy*bc_top_tinf(x[j])
 
             else:
                 #noeud intérieur
@@ -118,14 +135,17 @@ def solver_first_order(input_dict, sym_test = False):
                 A[k, k+1] = kappa/dx**2
                 A[k, k-nx] = kappa/dy**2
                 A[k, k+nx] = kappa/dy**2 
-                rhs[k] = -f
+                if source_mms is not None:
+                    rhs[k] = -(f + source_mms(x[j], y[i]))
+                else:
+                    rhs[k] = -f
             
     A = A.tocsr()
     T = spsolve(A, rhs)
 
     return T
 
-def solver_second_order(input_dict, sym_test = False):
+def solver_second_order(input_dict, sym_test = False, source_mms = None):
 
     b = input_dict['b']
     c = input_dict['c']
@@ -202,3 +222,22 @@ def solver_second_order(input_dict, sym_test = False):
     T = spsolve(A, rhs)
 
     return T
+
+def mms_Temperature(input_dict, MMS_func):
+    ny = input_dict['ny']
+    nx = input_dict['nx']
+    b = input_dict['b']
+    c = input_dict['c']
+
+    x = np.linspace(0,b,nx)
+    y = np.linspace(0,c,ny)
+    
+    T_mms_vec = np.zeros(nx*ny)
+
+    for i in range(ny):
+        for j in range(nx):
+            k = i*nx + j
+            T_mms_vec[k] = MMS_func(x[j], y[i])
+
+    return T_mms_vec
+
