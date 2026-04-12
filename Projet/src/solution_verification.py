@@ -49,13 +49,13 @@ def calcul_ordre_convergence_richardson(srq_list, maille_list, p_init=2.0, tol=1
     e32 = f3 - f2
     e21 = f2 - f1
 
-    print("f3, f2, f1 =", f3, f2, f1)
-    print("h3, h2, h1 =", h3, h2, h1)
-    print("r12 =", r12)
-    print("r23 =", r23)
-    print("e32 =", e32)
-    print("e21 =", e21)
-    print("ratio e32/e21 =", e32 / e21)
+    # print("f3, f2, f1 =", f3, f2, f1)
+    # print("h3, h2, h1 =", h3, h2, h1)
+    # print("r12 =", r12)
+    # print("r23 =", r23)
+    # print("e32 =", e32)
+    # print("e21 =", e21)
+    # print("ratio e32/e21 =", e32 / e21)
 
     if abs(e21) < 1e-14:
         raise ValueError("f2 - f1 est trop proche de 0, impossible de calculer l'ordre.")
@@ -164,8 +164,8 @@ def plot_relative_error_loglog(srq_list, maille_list, title="Erreur relative sur
     plt.tight_layout()
     plt.show()
 
-    print(f"Régression log-log : y = {C:.6e} * x^{slope:.6f}")
-    print(f"R² = {r2:.6f}")
+    # print(f"Régression log-log : y = {C:.6e} * x^{slope:.6f}")
+    # print(f"R² = {r2:.6f}")
 
     return slope, intercept, C, r2
 
@@ -182,12 +182,14 @@ def solution_verification(input_dict,order=2):
         if order == 1:
             temperature = solver_first_order(input_dict)
             heat_transfer = compute_boundary_fluxes(temperature,input_dict)
-            srq_list.append(np.max(temperature))
+            energy_conservation = compute_conservation_of_energy(temperature, input_dict)
+            srq_list.append((energy_conservation))
 
         elif order == 2:
             temperature = solver_second_order(input_dict)
             heat_transfer = compute_boundary_fluxes(temperature,input_dict)
-            srq_list.append(np.max(temperature))
+            energy_conservation = compute_conservation_of_energy(temperature, input_dict)
+            srq_list.append((temperature[2]))
 
     p_hat_rich = calcul_ordre_convergence_richardson(srq_list, maille_list, p_init=order)
 
@@ -196,6 +198,7 @@ def solution_verification(input_dict,order=2):
     print(p_hat_rich)
     
     plot_relative_error_loglog(srq_list, maille_list)
+    print(srq_list)
 
 
 
@@ -212,6 +215,8 @@ def post_processing_verification(input_dict):
 
         temperature_exact = mms_Temperature(input_dict, f_T_MMS)
         heat_transfer = compute_boundary_fluxes(temperature_exact,input_dict)
+        # energy_conservation = compute_conservation_of_energy(temperature_exact,input_dict,f_source=f_source,
+        #                                                       bc_top_tinf=f_tinf_top,bc_bottom=f_bc_bottom,order=2)
 
         srq_list.append(heat_transfer)
 
@@ -220,8 +225,10 @@ def post_processing_verification(input_dict):
     p_hat = calcul_p_hat(srq_list,2)
 
     print(p_hat_rich)
-    print(p_hat)
     
     plot_relative_error_loglog(srq_list, maille_list)
+
+    print(srq_list)
+
 
     

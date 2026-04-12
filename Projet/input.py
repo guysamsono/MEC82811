@@ -13,7 +13,7 @@ def gen_input():
         'u':1,              #vitesse
         'temp_a':100,       #température à la borne a
         'temp_b':100,       #température à la borne b
-        'h':5,              #coefficient de transfert thermique sur les cotés du domaine
+        'h':100,              #coefficient de transfert thermique sur les cotés du domaine
         'tinf':40          #température de référence pour les conditions de robin
     }
 

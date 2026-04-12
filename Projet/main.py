@@ -11,7 +11,7 @@ if __name__ == "__main__":
 
     input_dict = gen_input()
 
-    type_simul = 'post_processing_verification'   #type de simulation à réaliser : 'symmetry_test' ou 'temperature' ou 'temperature_mms ou solution_verification'
+    type_simul = 'solution_verification'   #type de simulation à réaliser : 'symmetry_test' ou 'temperature' ou 'temperature_mms ou solution_verification'
     order = '2'                            #ordre de la simulation : '1' pour ordre 1 et '2' pour ordre 2     
 
     if type_simul == 'symmetry_test':
