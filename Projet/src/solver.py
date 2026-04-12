@@ -184,11 +184,18 @@ def solver_first_order(input_dict, sym_test = False, source_mms = None,
             else:
                 #noeud intérieur
                 u = speed_function(c, d, y[i])
-                A[k, k-1] = (rho*cp*u/dx + kappa/dx**2)
-                A[k, k] = (-rho*cp*u/dx - 2*kappa/dx**2 - 2*kappa/dy**2)
-                A[k, k+1] = kappa/dx**2
+
                 A[k, k-nx] = kappa/dy**2
                 A[k, k+nx] = kappa/dy**2 
+
+                if u >= 0:
+                    A[k, k-1] = (rho*cp*u/dx + kappa/dx**2)
+                    A[k, k] = (-rho*cp*u/dx - 2*kappa/dx**2 - 2*kappa/dy**2)
+                    A[k, k+1] = kappa/dx**2
+                else:
+                    A[k,k-1 ] = kappa/dx**2
+                    A[k,k] =  (rho*cp*u/dx - 2*kappa/dx**2 - 2*kappa/dy**2)
+                    A[k,k+1] = kappa/dx**2 - rho*cp*u/dx
                 if source_mms is not None:
                     rhs[k] = -(f + source_mms(x[j], y[i]))
                 else:
@@ -206,7 +213,7 @@ def solver_second_order(input_dict, scheme = 'central', sym_test = False, source
     Résout l'équation de convection-diffusion en utilisant un schéma aux différences finies d'ordre 2.
 
     param input_dict: dictionnaire contenant les paramètres du problème (doit inclure 'nx', 'ny', 'k', 'b', 'c', 'rho', 'cp', 'd', 'f', 'temp_a', 'temp_b', 'h', 'tinf')
-    param scheme: Schéma de discrétisation pour le terme de convection ('central' pour central, 'upwind' pour upwind)
+    param scheme: Sc
     param sym_test: booléen indiquant si le test de symétrie doit être effectué (True) ou non (False)
     param source_mms: fonction source supplémentaire pour le test MMS (None si non utilisé)
     param bc_left, bc_right, bc_bottom, bc_top_tinf: fonctions de condition de frontière pour les côtés gauche, droit, bas et haut (None si non utilisé)

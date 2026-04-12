@@ -11,7 +11,7 @@ if __name__ == "__main__":
 
     input_dict = gen_input()
 
-    type_simul = 'temperature_mms'   #type de simulation à réaliser : 'symmetry_test' ou 'temperature' ou 'temperature_mms ou solution_verification'
+    type_simul = 'temperature'   #type de simulation à réaliser : 'symmetry_test' ou 'temperature' ou 'temperature_mms ou solution_verification'
     order = '2'                            #ordre de la simulation : '1' pour ordre 1 et '2' pour ordre 2     
 
     if type_simul == 'symmetry_test':
@@ -36,7 +36,7 @@ if __name__ == "__main__":
     if type_simul == 'temperature_mms':
         print('Vérification de la solution en cours...')
 
-        mms_convergence_analysis(input_dict, order, scheme='upwind')
+        mms_convergence_analysis(input_dict, order, scheme='central')
 
     if type_simul == 'solution_verification':
         print('Vérification de la solution en cours...')
