@@ -5,6 +5,7 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 
+# pylint: disable=too-many-arguments, too-many-positional-arguments, too-many-locals
 def graph_error_log(input_dict: dict,
                     discretization,
                     l1_list, l2_list, linf_list,
@@ -69,6 +70,7 @@ def graph_error_log(input_dict: dict,
 
 
 
+# pylint: disable=too-many-locals
 def print_convergence_table(n_points_list, discretization_list,
                             error_list, order,
                             label):
@@ -96,7 +98,10 @@ def print_convergence_table(n_points_list, discretization_list,
     print(header)
     print(f"{'-'*11}|{'-'*14}|{'-'*14}|{'-'*12}")
 
-    print(f"{n_points_list[0]:^10} | {discretization_list[0]:^12.2e} | {error_list[0]:^12.2e} | {'-':^10}")
+    n_0 = n_points_list[0]
+    d_0 = discretization_list[0]
+    e_0 = error_list[0]
+    print(f"{n_0:^10} | {d_0:^12.2e} | {e_0:^12.2e} | {'-':^10}")
 
     for i, p in enumerate(p_rates):
         n = n_points_list[i+1]

@@ -11,7 +11,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sympy as sp
 
-from src.solver import solver_first_order, solver_second_order, mms_Temperature
+from src.solver import solver_first_order, solver_second_order, mms_temperature
 from src.error import norm_l1, norm_l2, norm_infinity
 from src.convergence import graph_error_log, print_convergence_table
 
@@ -155,7 +155,7 @@ def mms_convergence_analysis(input_dict: dict, order, scheme='central'):
                 bc_bottom=f_bc_bottom, bc_top_tinf=f_tinf_top
             )
 
-        temperature_mms = mms_Temperature(local_dict, f_t_mms)
+        temperature_mms = mms_temperature(local_dict, f_t_mms)
 
         l1_list_x.append(norm_l1(temperature_sim, temperature_mms))
         l2_list_x.append(norm_l2(temperature_sim, temperature_mms))

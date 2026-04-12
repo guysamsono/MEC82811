@@ -11,9 +11,11 @@ from src.solver import (
     solver_first_order,
     solver_second_order,
     compute_boundary_fluxes)
-from src.mms import generer_mms_simple, mms_Temperature
+from src.mms import generer_mms_simple, mms_temperature
 
-def calcul_ordre_convergence_richardson(srq_list, maille_list, p_init=2.0, tol=1e-10, max_iter=1000):
+def calcul_ordre_convergence_richardson(
+        srq_list, maille_list, p_init=2.0,
+        tol=1e-10, max_iter=1000):
     """
     Calcule l'ordre de convergence observé p avec la méthode itérative de rich.
 
@@ -201,10 +203,22 @@ def solution_verification(input_dict, order=2, scheme='central'):
     p_hat_heat_central = calcul_p_hat(srq_list_heat_40, 2)
 
     print("\n--- Analyse de Vérification de Solution ---")
-    print(f"Ordre central (Richardson): {p_rich_tc:.3f} | Formule simple: {p_hat_temp_centrale:.3f}")
-    print(f"Ordre max (Richardson): {p_rich_tm:.3f} | Formule simple: {p_hat_temp_max:.3f}")
-    print(f"Ordre flux total (Richardson): {p_rich_hf:.3f} | Formule simple: {p_hat_heat_full:.3f}")
-    print(f"Ordre flux partiel (Richardson): {p_rich_hc:.3f} | Formule simple: {p_hat_heat_central:.3f}")
+    print(
+        f"Ordre central (Richardson): {p_rich_tc:.3f} | "
+        f"Formule simple: {p_hat_temp_centrale:.3f}"
+    )
+    print(
+        f"Ordre max (Richardson): {p_rich_tm:.3f} | "
+        f"Formule simple: {p_hat_temp_max:.3f}"
+    )
+    print(
+        f"Ordre flux total (Richardson): {p_rich_hf:.3f} | "
+        f"Formule simple: {p_hat_heat_full:.3f}"
+    )
+    print(
+        f"Ordre flux partiel (Richardson): {p_rich_hc:.3f} | "
+        f"Formule simple: {p_hat_heat_central:.3f}"
+    )
 
     plot_relative_error_loglog(
         srq_list_temp_centrale, maille_list, input_dict,
@@ -246,7 +260,7 @@ def post_processing_verification(input_dict):
         local_dict['nx'] = n
         local_dict['ny'] = n
 
-        temperature_exact = mms_Temperature(local_dict, f_t_mms)
+        temperature_exact = mms_temperature(local_dict, f_t_mms)
         heat_transfer = compute_boundary_fluxes(temperature_exact, local_dict, 0.0)
 
         srq_list.append(heat_transfer)

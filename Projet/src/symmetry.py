@@ -1,9 +1,17 @@
+"""
+Module dédié aux tests de symétrie.
+
+Ce module vérifie que la solution calculée sur la moitié supérieure du domaine
+(avec une condition de Neumann) correspond parfaitement à la solution
+calculée sur le domaine complet.
+"""
 import os
 import numpy as np
 from src.solver import solver_first_order, solver_second_order
 from src.plotter import temperature_plotter, error_plotter, one_dimension_plotter
 
 
+# pylint: disable=too-many-locals
 def test_symmetrie(order, input_dict, scheme):
 
     '''
