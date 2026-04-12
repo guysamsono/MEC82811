@@ -44,13 +44,6 @@ def temperature_plotter(
 
 
 def error_plotter(error, input_dict, filename='error_field.png'):
-    """
-    Affiche la distribution spatiale de l'erreur.
-
-    :param error: tableau 1D ou 2D représentant le champ d'erreur.
-    :param input_dict: dictionnaire contenant les paramètres du problème.
-    :param filename: nom du fichier de sauvegarde.
-    """
     b, c = input_dict['b'], input_dict['c']
     nx, ny = input_dict['nx'], input_dict['ny']
 
@@ -58,14 +51,15 @@ def error_plotter(error, input_dict, filename='error_field.png'):
     y = np.linspace(0, c, ny)
 
     error = error.reshape((ny, nx))
+    error_log = np.log10(np.abs(error) + 1e-16)
 
     plt.figure(figsize=(8, 4))
-    plt.contourf(x, y, error, 100, cmap='viridis')
+    plt.contourf(x, y, error_log, 100, cmap='viridis')
     plt.gca().set_aspect('equal', adjustable='box')
-    plt.colorbar(label='Error')
+    plt.colorbar(label=r'$\log_{10}(|\mathrm{Error}|)$')
     plt.xlabel('x')
     plt.ylabel('y')
-    plt.title('Error distribution')
+    plt.title('Log error distribution')
 
     save_full_path = os.path.join(input_dict['save_path'], filename)
     plt.savefig(save_full_path, dpi=300)
@@ -74,7 +68,7 @@ def error_plotter(error, input_dict, filename='error_field.png'):
 
 # pylint: disable=too-many-arguments, too-many-positional-arguments
 def one_dimension_plotter(
-        x, y, plot_dict, input_dict, last_graph=False,
+        x, y, plot_dict, input_dict, last_graph=False,linestyle='-',
         color='blue', filename='one_dimension_plot_group.png'):
     """
     Affiche une courbe 1D.
@@ -88,7 +82,7 @@ def one_dimension_plotter(
     :param filename: nom du fichier de sauvegarde.
     :return: None.
     """
-    plt.plot(x, y, label=f'{plot_dict["label"]}', color=color)
+    plt.plot(x, y, label=f'{plot_dict["label"]}', color=color, linestyle=linestyle)
     plt.xlabel(plot_dict["xlabel"])
     plt.ylabel(plot_dict["ylabel"])
     plt.title(plot_dict["title"])

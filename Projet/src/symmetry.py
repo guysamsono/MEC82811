@@ -94,6 +94,7 @@ def test_symmetrie(order, input_dict, scheme):
         input_dict,
         last_graph=False,
         color='blue',
+        linestyle='-',
         filename='SYMMETRY/symmetry_1d.png',
     )
 
@@ -105,6 +106,7 @@ def test_symmetrie(order, input_dict, scheme):
         input_dict,
         last_graph=True,
         color='red',
+        linestyle='--',
         filename='SYMMETRY/symmetry_1d.png'
     )
 
