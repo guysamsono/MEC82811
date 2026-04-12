@@ -7,14 +7,12 @@ import numpy as np
 import sympy as sp
 from src.error import *
 
-
-
 def graph_error_log(input_dict: dict,
                     discretization,
                     l1_list, l2_list, linf_list,
                     order,
                     variable_convergence,
-                    save_path="results/convergence.png",
+                    file_name="convergence.png",
                     show_fig=False,
                     xlabel=r"Taille de maille"):
     """
@@ -41,9 +39,6 @@ def graph_error_log(input_dict: dict,
         Étiquette de l'axe x.
     """
 
-    import os
-    import matplotlib.pyplot as plt
-
     rho = input_dict['rho']
     cp = input_dict['cp']
     kappa = input_dict['k']
@@ -67,15 +62,11 @@ def graph_error_log(input_dict: dict,
     plt.legend()
     plt.tight_layout()
 
-    folder = os.path.dirname(save_path)
-    if folder:
-        os.makedirs(folder, exist_ok=True)
-
-    plt.savefig(save_path, dpi=300)
-
+    save_full_path = os.path.join(input_dict['save_path'], file_name)
+    plt.savefig(save_full_path, dpi=300)
+    
     if show_fig:
         plt.show()
-
     plt.close()
 
 

@@ -88,7 +88,7 @@ def calcul_p_hat(k_list, ratio):
     return p_hat
 
 
-def plot_relative_error_loglog(srq_list, maille_list, title="Erreur relative sur la SRQ (%)"):
+def plot_relative_error_loglog(srq_list, maille_list, input_dict, title="Erreur relative sur la SRQ (%)", filename="srq_convergence.png"):
     """
     Trace l'erreur relative de la SRQ par rapport à la solution la plus fine
     sur un graphique log-log, et calcule la régression de type y = C x^p.
@@ -162,7 +162,10 @@ def plot_relative_error_loglog(srq_list, maille_list, title="Erreur relative sur
 
     plt.legend()
     plt.tight_layout()
-    plt.show()
+
+    save_full_path = os.path.join(input_dict['save_path'], filename)
+    plt.savefig(save_full_path, dpi=300)
+    plt.close()
 
     # print(f"Régression log-log : y = {C:.6e} * x^{slope:.6f}")
     # print(f"R² = {r2:.6f}")
@@ -205,7 +208,7 @@ def solution_verification(input_dict, order=2, scheme='central'):
 
     print(p_hat_rich)
     
-    plot_relative_error_loglog(srq_list, maille_list)
+    plot_relative_error_loglog(srq_list, maille_list, input_dict)
     print(srq_list)
 
 
@@ -234,7 +237,7 @@ def post_processing_verification(input_dict):
 
     print(p_hat_rich)
     
-    plot_relative_error_loglog(srq_list, maille_list)
+    plot_relative_error_loglog(srq_list, maille_list, input_dict)
 
     print(srq_list)
 

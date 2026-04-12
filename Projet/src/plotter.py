@@ -13,48 +13,30 @@ def temperature_plotter(T ,input_dict, title =None, filename='temperature_field.
     param sym_test: booléen indiquant si le test de symétrie est en cours (affecte l'axe y)
     return: None (affiche le graphique et le sauvegarde)'''
 
+    b, c = input_dict['b'], input_dict['c']
+    nx, ny = input_dict['nx'], input_dict['ny']
 
-    b = input_dict['b']
-    c = input_dict['c']
-    nx = input_dict['nx']
-    ny = input_dict['ny']
-
-    if sym_test:
-        y = np.linspace(-c, c, ny)
-    else:
-        y = np.linspace(0, c, ny)
-
+    y = np.linspace(-c, c, ny) if sym_test else np.linspace(0, c, ny)
     x = np.linspace(0, b, nx)
-
-    T = T.reshape((ny, nx))
+    T_mesh = T.reshape((ny, nx))
 
     plt.figure(figsize=(8, 4))
-    plt.contourf(x, y, T, 100, cmap='hot')
+    plt.contourf(x, y, T_mesh, 100, cmap='hot')
     plt.gca().set_aspect('equal', adjustable='box')
     plt.colorbar(label='Temperature')
     plt.xlabel('x')
     plt.ylabel('y')
     plt.title(title if title else 'Temperature distribution')
-    
-    file_path = os.path.join('results', filename)
+    plt.tight_layout()
 
-    try:
-        plt.savefig(file_path)
-
-    except Exception as err:
-        print(f'{err},le classeur results/sera crée')
-        os.mkdir('results/')
-        plt.savefig(file_path)
-
+    save_full_path = os.path.join(input_dict['save_path'], filename)
+    plt.savefig(save_full_path, dpi=300)
     plt.close()
-    return
 
 def error_plotter(error, input_dict, filename='error_field.png'):
 
-    b = input_dict['b']
-    c = input_dict['c']
-    nx = input_dict['nx']
-    ny = input_dict['ny']
+    b, c = input_dict['b'], input_dict['c']
+    nx, ny = input_dict['nx'], input_dict['ny']
 
     x = np.linspace(0, b, nx)
     y = np.linspace(0, c, ny)
@@ -68,21 +50,13 @@ def error_plotter(error, input_dict, filename='error_field.png'):
     plt.xlabel('x')
     plt.ylabel('y')
     plt.title('Error distribution')
-    
-    file_path = os.path.join('results', filename)
 
-    try:
-        plt.savefig(file_path)
-
-    except Exception as err:
-        print(f'{err},le classeur results/sera crée')
-        os.mkdir('results/')
-        plt.savefig(file_path)
-
+    save_full_path = os.path.join(input_dict['save_path'], filename)
+    plt.savefig(save_full_path, dpi=300)
     plt.close()
-    return
 
-def one_dimension_plotter(x, y, plot_dict, last_graph=False, color='blue', filename='one_dimension_plot_group.png'):
+
+def one_dimension_plotter(x, y, plot_dict, input_dict, last_graph=False, color='blue', filename='one_dimension_plot_group.png'):
 
     '''
     Affiche une courbe 1D.
@@ -99,20 +73,10 @@ def one_dimension_plotter(x, y, plot_dict, last_graph=False, color='blue', filen
     plt.ylabel(plot_dict["ylabel"])
     plt.title(plot_dict["title"])
     plt.legend()
-
-    file_path = os.path.join('results', filename)
-
-    try:
-        plt.savefig(file_path)
-
-    except Exception as err:
-        print(f'{err},le classeur results/sera crée')
-        os.mkdir('results/')
-        plt.savefig(file_path)
+    plt.grid(True, alpha=0.3)
 
     if last_graph:
-        plt.grid()
+        plt.tight_layout()
+        save_full_path = os.path.join(input_dict['save_path'], filename)
+        plt.savefig(save_full_path, dpi=300)
         plt.close()
-
-    return
-

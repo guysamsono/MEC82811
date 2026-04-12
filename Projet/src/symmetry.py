@@ -77,9 +77,10 @@ def test_symmetrie(order, input_dict, scheme):
         y,
         t_normal_order_reshaped[:, j_mid],
         plot_dict,
+        input_dict,
         last_graph=False,
         color='blue',
-        filename='symmetry_1d.png'
+        filename='symmetry_1d.png',
     )
 
     plot_dict['label'] = 'Temperature on symmetrised domain'
@@ -87,6 +88,7 @@ def test_symmetrie(order, input_dict, scheme):
         y,
         np.flip(t_sym_reshaped[:ny, j_mid]),
         plot_dict,
+        input_dict,
         last_graph=True,
         color='red',
         filename='symmetry_1d.png'
@@ -97,9 +99,8 @@ def test_symmetrie(order, input_dict, scheme):
         y2,
         t_sym_reshaped[:, j_mid],
         plot_dict,
+        input_dict,
         last_graph=True,
         color='green',
         filename='symmetry_1d_full.png'
     )
-    
-    return

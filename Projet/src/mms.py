@@ -107,7 +107,8 @@ def generer_mms_simple(input_dict: dict, afficher_graphiques: bool = False, save
 
     # Graphiques
     if afficher_graphiques:
-        os.makedirs(save_path, exist_ok=True)
+        mms_dir = os.path.join(input_dict['save_path'], "MMS")
+        os.makedirs(mms_dir, exist_ok=True)
 
         plt.figure(figsize=(8, 4))
         contour1 = plt.contourf(xdom, ydom, z_MMS.T, 100, cmap='hot')
@@ -117,7 +118,7 @@ def generer_mms_simple(input_dict: dict, afficher_graphiques: bool = False, save
         plt.xlabel('x')
         plt.ylabel('y')
         plt.tight_layout()
-        plt.savefig(f"{save_path}/MMS_solution.png", dpi=300)
+        plt.savefig(os.path.join(mms_dir, "MMS_solution.png"), dpi=300)
         plt.close()
 
         plt.figure(figsize=(8, 4))
@@ -128,7 +129,7 @@ def generer_mms_simple(input_dict: dict, afficher_graphiques: bool = False, save
         plt.xlabel('x')
         plt.ylabel('y')
         plt.tight_layout()
-        plt.savefig(f"{save_path}/MMS_source.png", dpi=300)
+        plt.savefig(os.path.join(mms_dir, "MMS_source.png"), dpi=300)
         plt.close()
 
     return f_T_MMS, f_source, f_bc_left, f_bc_right, f_bc_bottom, f_tinf_top
@@ -169,8 +170,8 @@ def mms_convergence_analysis(input_dict: dict, order,scheme='central'):
 
     graph_error_log(local_dict,discretization_list, l1_list_x, l2_list_x, linf_list_x,1,  
                     'x',
-                    save_path=f"results/convergence_x_order_{order}.png",
-                    show_fig=True,
+                    file_name=f"convergence_x_order_{order}.png",
+                    show_fig=False,
                     xlabel=r"Taille de maille")
     
     print_convergence_table(maille_list, discretization_list, l1_list_x, str(order), f"L1 en x pour l'ordre")

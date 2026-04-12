@@ -30,8 +30,8 @@ if __name__ == "__main__":
             print(f"Résidu de la conservation de l'énergie : {srq}")
         
         temperature_plotter(temperature, input_dict)
-        save_as_csv(temperature, input_dict, f"results/temperature_order_{order}.csv")
-        save_input_as_csv(input_dict, f"results/input_parameters_order_{order}.csv")
+        save_as_csv(temperature, input_dict, f"{input_dict['save_path']}/temperature_order_{order}.csv")
+        save_input_as_csv(input_dict, f"{input_dict['save_path']}/input_parameters_order_{order}.csv")
 
     if type_simul == 'temperature_mms':
         print('Vérification de la solution en cours...')
@@ -66,8 +66,8 @@ if __name__ == "__main__":
         print(f"Résidu de la conservation de l'énergie : {srq}")
         
         temperature_plotter(temperature, input_dict)
-        save_as_csv(temperature, input_dict, f"results/temperature_order_{order}.csv")
-        save_input_as_csv(input_dict, f"results/input_parameters_order_{order}.csv")
+        save_as_csv(temperature, input_dict, f"{input_dict['save_path']}/temperature_order_{order}.csv")
+        save_input_as_csv(input_dict, f"{input_dict['save_path']}/input_parameters_order_{order}.csv")
         print('Calcul de la température terminé.\n')
 
         print('--- ÉTAPE 3 : Vérification de code (MMS) ---')
