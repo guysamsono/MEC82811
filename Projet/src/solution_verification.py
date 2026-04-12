@@ -176,7 +176,8 @@ def plot_relative_error_loglog(srq_list, maille_list, input_dict, title="Erreur 
 def solution_verification(input_dict, order=2, scheme='central'):
     maille_list = [51, 101, 201, 401, 801]
     local_dict = input_dict.copy()
-    srq_list = []
+    srq_list_temperature_centrale, srq_list_temperature_max, srq_list_heat_transfer_full, srq_list_heat_transfer_40 = [], [], [], []
+    srq_list_temperature_max = []
 
     for n in maille_list:
         local_dict['nx'] = n
@@ -184,34 +185,40 @@ def solution_verification(input_dict, order=2, scheme='central'):
 
         if order == 1:
             temperature = solver_first_order(local_dict)
-            heat_transfer = compute_boundary_fluxes(temperature,local_dict)
-            energy_conservation = compute_conservation_of_energy(temperature, local_dict)
-            srq_list.append((energy_conservation))
-
         elif order == 2:
             temperature = solver_second_order(local_dict, scheme)
-            heat_transfer = compute_boundary_fluxes(temperature, local_dict, margin_ratio=0.4)
-            energy_conservation = compute_conservation_of_energy(temperature, local_dict)
+        
+        heat_transfer_0 = compute_boundary_fluxes(temperature, local_dict, margin_ratio=0.0)
+        heat_transfer_40 = compute_boundary_fluxes(temperature, local_dict, margin_ratio=0.4)
+        srq_list_heat_transfer_full.append(heat_transfer_0)
+        srq_list_heat_transfer_40.append(heat_transfer_40)
 
-            # Mid Temp SRQ
-            # i_mid = input_dict['ny'] // 2
-            # j_mid = input_dict['nx'] // 2
-            # k_mid = i_mid * input_dict['nx'] + j_mid
-            # srq_list.append(temperature[k_mid])
+        # Mid Temp SRQ
+        i_mid = local_dict['ny'] // 2
+        j_mid = local_dict['nx'] // 2
+        k_mid = i_mid * local_dict['nx'] + j_mid
+        srq_list_temperature_centrale.append(temperature[k_mid])
+        srq_list_temperature_max.append(max(temperature))
 
-            # Heat transfer srq
-            srq_list.append(heat_transfer)
+    p_hat_rich_temp_centrale = calcul_ordre_convergence_richardson(srq_list_temperature_centrale, maille_list, p_init=order)
+    p_hat_rich_temp_max = calcul_ordre_convergence_richardson(srq_list_temperature_max, maille_list, p_init=order)
+    p_hat_rich_heat_transfer_full = calcul_ordre_convergence_richardson(srq_list_heat_transfer_full, maille_list, p_init=order)
+    p_hat_rich_heat_transfer_central = calcul_ordre_convergence_richardson(srq_list_heat_transfer_40, maille_list, p_init=order)
 
-    p_hat_rich = calcul_ordre_convergence_richardson(srq_list, maille_list, p_init=order)
+    p_hat_temp_centrale = calcul_p_hat(srq_list_temperature_centrale, 2)
+    p_hat_temp_max = calcul_p_hat(srq_list_temperature_max, 2)
+    p_hat_heat_transfer_full = calcul_p_hat(srq_list_heat_transfer_full, 2)
+    p_hat_heat_transfer_central = calcul_p_hat(srq_list_heat_transfer_40, 2)
 
-    p_hat = calcul_p_hat(srq_list,2)
-
-    print(p_hat_rich)
+    print(f"L'ordre de convergence pour la température centrale est {p_hat_temp_centrale}")
+    print(f"L'ordre de convergence pour la température maximale est {p_hat_temp_max}")
+    print(f"L'ordre de convergence pour le heat transfer total est {p_hat_heat_transfer_full}")
+    print(f"L'ordre de convergence pour le heat transfer cental est {p_hat_heat_transfer_central}")
     
-    plot_relative_error_loglog(srq_list, maille_list, input_dict)
-    print(srq_list)
-
-
+    plot_relative_error_loglog(srq_list_temperature_centrale, maille_list, input_dict, title="Erreur relative sur la température centrale (%)", filename="srq_convergence_temp_centrale.png")
+    plot_relative_error_loglog(srq_list_temperature_max, maille_list, input_dict, title="Erreur relative sur la température maximale (%)", filename="srq_convergence_temp_max.png")
+    plot_relative_error_loglog(srq_list_heat_transfer_full, maille_list, input_dict, title="Erreur relative sur le transfer de chaleur total (%)", filename="srq_convergence_heat_full.png")
+    plot_relative_error_loglog(srq_list_heat_transfer_40, maille_list, input_dict, title="Erreur relative sur le transfer de chaleur partiel (%)", filename="srq_convergence_heat_center.png")
 
 def post_processing_verification(input_dict):
     maille_list = [100,200,400,500,600,700,800,900,1000]
