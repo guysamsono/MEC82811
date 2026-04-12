@@ -1,27 +1,37 @@
+"""
+Module de génération et sauvegarde de graphiques.
+
+Fournit des fonctions pour tracer des champs de température en 2D,
+des champs d'erreur, et des coupes 1D.
+"""
+import os
 import matplotlib.pyplot as plt
 import numpy as np
-import os
 
-def temperature_plotter(T ,input_dict, title =None, filename='temperature_field.png', sym_test=False):
 
-    '''
-    Affiche la distribution de température à partir d'un tableau 1D de températures.
-    param T: tableau 1D de la température à chaque point du maillage (taille nx*ny)
-    param input_dict: dictionnaire contenant les paramètres du problème (doit inclure 'nx', 'ny', 'k', 'b', 'c')
-    param title: titre du graphique (optionnel)
-    param filename: nom du fichier de sauvegarde (optionnel, par défaut 'temperature_field.png')
-    param sym_test: booléen indiquant si le test de symétrie est en cours (affecte l'axe y)
-    return: None (affiche le graphique et le sauvegarde)'''
+def temperature_plotter(
+        t_array, input_dict, title=None,
+        filename='temperature_field.png', sym_test=False):
+    """
+    Affiche la distribution de température à partir d'un tableau 1D.
 
+    :param t_array: tableau 1D de la température (taille nx*ny).
+    :param input_dict: dictionnaire des paramètres ('nx', 'ny', 'k', 'b', 'c').
+    :param title: titre du graphique (optionnel).
+    :param filename: nom du fichier de sauvegarde.
+    :param sym_test: booléen (affecte l'axe y pour le test de symétrie).
+    :return: None (affiche le graphique et le sauvegarde).
+    """
     b, c = input_dict['b'], input_dict['c']
     nx, ny = input_dict['nx'], input_dict['ny']
 
     y = np.linspace(-c, c, ny) if sym_test else np.linspace(0, c, ny)
     x = np.linspace(0, b, nx)
-    T_mesh = T.reshape((ny, nx))
+
+    t_mesh = t_array.reshape((ny, nx))
 
     plt.figure(figsize=(8, 4))
-    plt.contourf(x, y, T_mesh, 100, cmap='hot')
+    plt.contourf(x, y, t_mesh, 100, cmap='hot')
     plt.gca().set_aspect('equal', adjustable='box')
     plt.colorbar(label='Temperature')
     plt.xlabel('x')
@@ -33,8 +43,15 @@ def temperature_plotter(T ,input_dict, title =None, filename='temperature_field.
     plt.savefig(save_full_path, dpi=300)
     plt.close()
 
-def error_plotter(error, input_dict, filename='error_field.png'):
 
+def error_plotter(error, input_dict, filename='error_field.png'):
+    """
+    Affiche la distribution spatiale de l'erreur.
+
+    :param error: tableau 1D ou 2D représentant le champ d'erreur.
+    :param input_dict: dictionnaire contenant les paramètres du problème.
+    :param filename: nom du fichier de sauvegarde.
+    """
     b, c = input_dict['b'], input_dict['c']
     nx, ny = input_dict['nx'], input_dict['ny']
 
@@ -56,18 +73,22 @@ def error_plotter(error, input_dict, filename='error_field.png'):
     plt.close()
 
 
-def one_dimension_plotter(x, y, plot_dict, input_dict, last_graph=False, color='blue', filename='one_dimension_plot_group.png'):
-
-    '''
+# pylint: disable=too-many-arguments, too-many-positional-arguments
+def one_dimension_plotter(
+        x, y, plot_dict, input_dict, last_graph=False,
+        color='blue', filename='one_dimension_plot_group.png'):
+    """
     Affiche une courbe 1D.
-    param x: tableau 1D des abscisses
-    param y: tableau 1D des ordonnées
-    param plot_dict: dictionnaire contenant les éléments de personnalisation du graphique (doit inclure 'xlabel', 'ylabel', 'title', 'label')
-    param last_graph: booléen indiquant si c'est le dernier graphique à afficher (affecte la grille et la fermeture du graphique)
-    param color: couleur de la courbe (optionnel, par défaut 'blue')
-    param filename: nom du fichier de sauvegarde (optionnel, par défaut 'one_dimension_plot_group.png')
-    return: None (affiche le graphique et le sauvegarde)'''
 
+    :param x: tableau 1D des abscisses.
+    :param y: tableau 1D des ordonnées.
+    :param plot_dict: dictionnaire de personnalisation ('xlabel', 'title'...).
+    :param input_dict: dictionnaire contenant 'save_path'.
+    :param last_graph: bool indiquant si c'est le dernier graphique à afficher.
+    :param color: couleur de la courbe (par défaut 'blue').
+    :param filename: nom du fichier de sauvegarde.
+    :return: None.
+    """
     plt.plot(x, y, label=f'{plot_dict["label"]}', color=color)
     plt.xlabel(plot_dict["xlabel"])
     plt.ylabel(plot_dict["ylabel"])
