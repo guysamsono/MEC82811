@@ -170,7 +170,7 @@ def plot_relative_error_loglog(srq_list, maille_list, title="Erreur relative sur
     return slope, intercept, C, r2
 
 
-def solution_verification(input_dict,order=2):
+def solution_verification(input_dict,order=2, scheme='central'):
     maille_list = [100,200,400,600]
 
     srq_list = []
@@ -186,10 +186,10 @@ def solution_verification(input_dict,order=2):
             srq_list.append((energy_conservation))
 
         elif order == 2:
-            temperature = solver_second_order(input_dict)
+            temperature = solver_second_order(input_dict,scheme)
             heat_transfer = compute_boundary_fluxes(temperature,input_dict)
             energy_conservation = compute_conservation_of_energy(temperature, input_dict)
-            srq_list.append((temperature[2]))
+            srq_list.append(heat_transfer)
 
     p_hat_rich = calcul_ordre_convergence_richardson(srq_list, maille_list, p_init=order)
 

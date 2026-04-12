@@ -11,12 +11,12 @@ if __name__ == "__main__":
 
     input_dict = gen_input()
 
-    type_simul = 'temperature'   #type de simulation à réaliser : 'symmetry_test' ou 'temperature' ou 'temperature_mms ou solution_verification'
+    type_simul = 'symmetry_test'   #type de simulation à réaliser : 'symmetry_test' ou 'temperature' ou 'temperature_mms ou solution_verification'
     order = '2'                            #ordre de la simulation : '1' pour ordre 1 et '2' pour ordre 2     
 
     if type_simul == 'symmetry_test':
         print('Test de symétrie en cours...')
-        test_symmetrie(order, input_dict)
+        test_symmetrie(order, input_dict,scheme='upwind')
     
     if type_simul == 'temperature':
         print(f'Simulation de température en cours à ordre {order}...')
@@ -41,7 +41,7 @@ if __name__ == "__main__":
     if type_simul == 'solution_verification':
         print('Vérification de la solution en cours...')
 
-        solution_verification(input_dict,2)
+        solution_verification(input_dict,2, scheme='upwind')
 
     if type_simul == 'post_processing_verification':
         
