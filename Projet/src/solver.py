@@ -4,10 +4,21 @@ from scipy.sparse.linalg import spsolve
 
 def speed_function(c,d, y):
 
+    '''
+    Fonction qui calcule la vitesse u(y) à partir de la formule donnée dans l'énoncé.
+
+    param c: largeur du domaine (int)
+    param d: débit du fluide (float)
+    param y: position en y (float)
+
+    return: u(y) pour la position donnée (float)
+    '''
     speed = (3*d)/(4*c)*(1 - (y/c)**2)
     return speed 
 
 def compute_conservation_of_energy(T, input_dict):
+
+
     ny = input_dict['ny']
     nx = input_dict['nx']
     kappa = input_dict['k']
@@ -121,6 +132,15 @@ def compute_conservation_of_energy(T, input_dict):
 #     return total
 
 def compute_boundary_fluxes(T, input_dict):
+    
+    '''
+    Calcule le flux de chaleur à travers la frontière supérieure du domaine.
+    
+    param T: tableau 1D de la température à chaque point du maillage (taille nx*ny)
+    param input_dict: dictionnaire contenant les paramètres du problème (doit inclure 'nx', 'ny', 'k', 'b', 'c')
+
+    return: flux de chaleur à travers la frontière supérieure (float)
+    '''
     ny = input_dict['ny']
     nx = input_dict['nx']
     kappa = input_dict['k']
@@ -145,6 +165,17 @@ def compute_boundary_fluxes(T, input_dict):
 
 def solver_first_order(input_dict, sym_test = False, source_mms = None,
                        bc_left=None, bc_right=None, bc_bottom=None, bc_top_tinf=None ):
+    
+    '''
+    Résout l'équation de convection-diffusion en utilisant un schéma aux différences finies d'ordre 1.
+
+    param input_dict: dictionnaire contenant les paramètres du problème (doit inclure 'nx', 'ny', 'k', 'b', 'c', 'rho', 'cp', 'd', 'f', 'temp_a', 'temp_b', 'h', 'tinf')
+    param sym_test: booléen indiquant si le test de symétrie doit être effectué (True) ou non (False)
+    param source_mms: fonction source supplémentaire pour le test MMS (None si non utilisé)
+    param bc_left, bc_right, bc_bottom, bc_top_tinf: fonctions de condition de frontière pour les côtés gauche, droit, bas et haut (None si non utilisé)
+
+    return: tableau 1D de la température à chaque point du maillage (taille nx*ny)
+    '''
 
     b = input_dict['b']
     c = input_dict['c']
@@ -155,7 +186,6 @@ def solver_first_order(input_dict, sym_test = False, source_mms = None,
     cp = input_dict['cp']
     kappa = input_dict['k']
     f = input_dict['f']
-    u = input_dict['u']
     temp_a = input_dict['temp_a']
     temp_b = input_dict['temp_b']
     h = input_dict['h']
@@ -241,6 +271,17 @@ def solver_first_order(input_dict, sym_test = False, source_mms = None,
 def solver_second_order(input_dict, sym_test = False, source_mms = None,
                         bc_left=None, bc_right=None, bc_bottom=None, bc_top_tinf=None):
 
+    '''
+    Résout l'équation de convection-diffusion en utilisant un schéma aux différences finies d'ordre 2.
+
+    param input_dict: dictionnaire contenant les paramètres du problème (doit inclure 'nx', 'ny', 'k', 'b', 'c', 'rho', 'cp', 'd', 'f', 'temp_a', 'temp_b', 'h', 'tinf')
+    param sym_test: booléen indiquant si le test de symétrie doit être effectué (True) ou non (False)
+    param source_mms: fonction source supplémentaire pour le test MMS (None si non utilisé)
+    param bc_left, bc_right, bc_bottom, bc_top_tinf: fonctions de condition de frontière pour les côtés gauche, droit, bas et haut (None si non utilisé)
+
+    return: tableau 1D de la température à chaque point du maillage (taille nx*ny)
+    '''
+
     b = input_dict['b']
     c = input_dict['c']
     d = input_dict['d']
@@ -250,7 +291,6 @@ def solver_second_order(input_dict, sym_test = False, source_mms = None,
     cp = input_dict['cp']
     kappa = input_dict['k']
     f = input_dict['f']
-    u = input_dict['u']
     temp_a = input_dict['temp_a']
     temp_b = input_dict['temp_b']
     h = input_dict['h']
@@ -354,3 +394,32 @@ def mms_Temperature(input_dict, MMS_func):
 
     return T_mms_vec
 
+def save_as_csv(T, input_dict, filename='results/temperature_field.csv'):
+
+    b = input_dict['b']
+    c = input_dict['c']
+    nx = input_dict['nx']
+    ny = input_dict['ny']
+
+    x = np.linspace(0, b, nx)
+    y = np.linspace(0, c, ny)
+
+    T = T.reshape((ny, nx))
+
+    data = np.zeros((ny*nx, 3))
+    idx = 0
+    for i in range(ny):
+        for j in range(nx):
+            data[idx] = [x[j], y[i], T[i,j]]
+            idx += 1
+
+    np.savetxt(filename, data, delimiter=',', header='x,y,T', comments='')
+
+    return
+
+def save_input_as_csv(input_dict, filename='results/input_parameters.csv'):
+    with open(filename, 'w') as f:
+        for key, value in input_dict.items():
+            f.write(f"{key},{value}\n")
+
+    return

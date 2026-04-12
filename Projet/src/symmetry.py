@@ -4,6 +4,13 @@ import numpy as np
 
 def test_symmetrie(order, input_dict):
 
+    '''
+    Test de symétrie pour les schémas d'ordre 1 et 2.
+    param order: ordre du schéma à tester ('1' ou '2')
+    param input_dict: dictionnaire contenant les paramètres du problème (doit inclure 'nx', 'ny', 'k', 'b', 'c', 'rho', 'cp', 'f', 'h')
+    return: None (affiche les graphiques et imprime la norme de l'erreur)
+    '''
+
     assert order in ['1', '2'], "Order must be either 1 or 2"
 
     if order == '1':
