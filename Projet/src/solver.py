@@ -5,7 +5,7 @@ Contient les solveurs par différences finies d'ordre 1 et 2,
 ainsi que les fonctions de calcul de flux et de conservation.
 """
 import numpy as np
-from scipy.sparse import lil_matrix
+from scipy.sparse import lil_matrix, diags
 from scipy.sparse.linalg import spsolve
 
 
@@ -232,176 +232,100 @@ def solver_second_order(
         bc_left=None, bc_right=None, bc_bottom=None, bc_top_tinf=None
 ):
     """
-    Résout l'équation de convection-diffusion (schéma ordre 2).
-
-    :param input_dict: paramètres du problème ('nx', 'ny', 'k', 'b', etc.)
-    :param scheme: Schéma d'advection ('central' ou 'upwind')
-    :param sym_test: booléen (True si test de symétrie)
-    :param source_mms: fonction source supplémentaire pour le test MMS
-    :param bc_left, bc_right, bc_bottom, bc_top_tinf: conditions aux limites
-    :return: tableau 1D de la température
+    Résout l'équation de convection-diffusion via une approche vectorisée hybride.
     """
-    b = input_dict['b']
-    c = input_dict['c']
-    d = input_dict['d']
-    nx = input_dict['nx']
-    ny = input_dict['ny']
-    rho = input_dict['rho']
-    cp = input_dict['cp']
-    kappa = input_dict['k']
-    f = input_dict['f']
-    temp_a = input_dict['temp_a']
-    temp_b = input_dict['temp_b']
-    h = input_dict['h']
-    tinf = input_dict['tinf']
+    b, c, d = input_dict['b'], input_dict['c'], input_dict['d']
+    nx, ny = input_dict['nx'], input_dict['ny']
+    rho, cp, kappa, f = input_dict['rho'], input_dict['cp'], input_dict['k'], input_dict['f']
+    temp_a, temp_b = input_dict['temp_a'], input_dict['temp_b']
+    h, tinf = input_dict['h'], input_dict['tinf']
 
     x = np.linspace(0, b, nx)
-    if sym_test:
-        y = np.linspace(-c, c, ny)
-    else:
-        y = np.linspace(0, c, ny)
-    dx = x[1] - x[0]
-    dy = y[1] - y[0]
-
+    y = np.linspace(-c, c, ny) if sym_test else np.linspace(0, c, ny)
+    dx, dy = x[1] - x[0], y[1] - y[0]
     n_nodes = nx * ny
-    matrix_a = lil_matrix((n_nodes, n_nodes))
-    rhs = np.zeros(nx*ny)
+
+    # --- 1. PRÉ-CALCULS VECTORISÉS ---
+    x_mesh, y_mesh = np.meshgrid(x, y)
+    y_flat = y_mesh.flatten()
+
+    u_flat = speed_function(c, d, y_flat)
+    diff_x, diff_y = kappa / dx**2, kappa / dy**2
+    adv_flat = rho * cp * u_flat / (2 * dx)
+
+    # Indice j (colonne) pour chaque nœud (0 à nx-1 répété)
+    j_flat = np.tile(np.arange(nx), ny)
+
+    # --- 2. CONSTRUCTION DES DIAGONALES (Nœuds intérieurs) ---
+    south_diag = np.full(n_nodes - nx, diff_y)
+    north_diag = np.full(n_nodes - nx, diff_y)
 
     if scheme == 'central':
-        for i in range(ny):
-            for j in range(nx):
-                k = i * nx + j
+        main_diag = np.full(n_nodes, -2*diff_x - 2*diff_y)
+        west_diag = diff_x + adv_flat[1:]
+        east_diag = diff_x - adv_flat[:-1]
 
-                if j == 0:
-                    matrix_a[k, k] = 1
-                    if bc_left is None:
-                        rhs[k] = temp_a
-                    else:
-                        rhs[k] = bc_left(y[i])
-
-                elif j == nx-1:
-                    matrix_a[k, k] = 1
-                    if bc_right is None:
-                        rhs[k] = temp_b
-                    else:
-                        rhs[k] = bc_right(y[i])
-
-                elif not sym_test and i == 0:
-                    if bc_bottom is None:
-                        matrix_a[k, k] = -3
-                        matrix_a[k, k+nx] = 4
-                        matrix_a[k, k+2*nx] = -1
-                        rhs[k] = 0
-                    else:
-                        matrix_a[k, k] = -3.0 / (2*dy)
-                        matrix_a[k, k + nx] = 4.0 / (2*dy)
-                        matrix_a[k, k + 2*nx] = -1.0 / (2*dy)
-                        rhs[k] = bc_bottom(x[j])
-
-                elif sym_test and i == 0:
-                    matrix_a[k, k] = -3*kappa - 2*dy*h
-                    matrix_a[k, k+nx] = 4*kappa
-                    matrix_a[k, k+2*nx] = -1*kappa
-                    rhs[k] = -2*dy*h*tinf
-
-                elif i == ny-1:
-                    matrix_a[k, k] = 3*kappa + 2*dy*h
-                    matrix_a[k, k-nx] = -4*kappa
-                    matrix_a[k, k-2*nx] = 1*kappa
-                    if bc_top_tinf is None:
-                        rhs[k] = 2*dy*h*tinf
-                    else:
-                        rhs[k] = 2*dy*h*bc_top_tinf(x[j])
-
-                else:
-                    u = speed_function(c, d, y[i])
-                    matrix_a[k, k-1] = rho*cp*u/(2*dx) + kappa/dx**2
-                    matrix_a[k, k] = -2*kappa/dx**2 - 2*kappa/dy**2
-                    matrix_a[k, k+1] = kappa/dx**2 - rho*cp*u/(2*dx)
-                    matrix_a[k, k-nx] = kappa/dy**2
-                    matrix_a[k, k+nx] = kappa/dy**2
-                    if source_mms is None:
-                        rhs[k] = -f
-                    else:
-                        rhs[k] = -(f + source_mms(x[j], y[i]))
+        diagonals = [main_diag, south_diag, north_diag, west_diag, east_diag]
+        offsets = [0, -nx, nx, -1, 1]
 
     elif scheme == 'upwind':
-        for i in range(ny):
-            for j in range(nx):
-                k = i * nx + j
+        # Puisque u >= 0 partout, on applique Upwind à droite.
+        # j_flat == 1 -> Centré. j_flat > 1 -> Upwind.
+        main_diag = np.where(j_flat > 1, -2*diff_x - 2*diff_y - 3*adv_flat, -2*diff_x - 2*diff_y)
+        west_diag = np.where(j_flat[1:] > 1, diff_x + 4*adv_flat[1:], diff_x + adv_flat[1:])
+        east_diag = np.where(j_flat[:-1] == 1, diff_x - adv_flat[:-1], diff_x)
+        ww_diag = np.where(j_flat[2:] > 1, -adv_flat[2:], 0.0)
 
-                if j == 0:
-                    matrix_a[k, k] = 1
-                    if bc_left is None:
-                        rhs[k] = temp_a
-                    else:
-                        rhs[k] = bc_left(y[i])
+        diagonals = [main_diag, south_diag, north_diag, west_diag, east_diag, ww_diag]
+        offsets = [0, -nx, nx, -1, 1, -2]
 
-                elif j == nx-1:
-                    matrix_a[k, k] = 1
-                    if bc_right is None:
-                        rhs[k] = temp_b
-                    else:
-                        rhs[k] = bc_right(y[i])
+    # Génération instantanée de la matrice creuse avec diags
+    matrix_a = diags(diagonals, offsets, shape=(n_nodes, n_nodes), format='lil')
 
-                elif not sym_test and i == 0:
-                    if bc_bottom is None:
-                        matrix_a[k, k] = -3
-                        matrix_a[k, k+nx] = 4
-                        matrix_a[k, k+2*nx] = -1
-                        rhs[k] = 0
-                    else:
-                        matrix_a[k, k] = -3.0 / (2*dy)
-                        matrix_a[k, k + nx] = 4.0 / (2*dy)
-                        matrix_a[k, k + 2*nx] = -1.0 / (2*dy)
-                        rhs[k] = bc_bottom(x[j])
+    # --- 3. VECTEUR SOURCE (RHS) ---
+    if source_mms is None:
+        rhs = np.full(n_nodes, -f, dtype=float)
+    else:
+        rhs = -(f + source_mms(x_mesh.flatten(), y_flat))
 
-                elif sym_test and i == 0:
-                    matrix_a[k, k] = -3*kappa - 2*dy*h
-                    matrix_a[k, k+nx] = 4*kappa
-                    matrix_a[k, k+2*nx] = -1*kappa
-                    rhs[k] = -2*dy*h*tinf
+    # --- 4. ÉCRASEMENT DES CONDITIONS AUX LIMITES ---
+    # Cette méthode accède directement à l'architecture de lil_matrix pour des perfs maximales
 
-                elif i == ny-1:
-                    matrix_a[k, k] = 3*kappa + 2*dy*h
-                    matrix_a[k, k-nx] = -4*kappa
-                    matrix_a[k, k-2*nx] = 1*kappa
-                    if bc_top_tinf is None:
-                        rhs[k] = 2*dy*h*tinf
-                    else:
-                        rhs[k] = 2*dy*h*bc_top_tinf(x[j])
+    # A. Gauche (Dirichlet)
+    for k in range(0, n_nodes, nx):
+        matrix_a.data[k] = [1.0]
+        matrix_a.rows[k] = [k]
+        rhs[k] = temp_a if bc_left is None else bc_left(y[k // nx])
 
-                else:
-                    u = speed_function(c, d, y[i])
-                    matrix_a[k, k-nx] = kappa/dy**2
-                    matrix_a[k, k+nx] = kappa/dy**2
+    # B. Droite (Dirichlet)
+    for k in range(nx - 1, n_nodes, nx):
+        matrix_a.data[k] = [1.0]
+        matrix_a.rows[k] = [k]
+        rhs[k] = temp_b if bc_right is None else bc_right(y[k // nx])
 
-                    if u >= 0:
-                        if j == 1:
-                            matrix_a[k, k-1] = kappa/dx**2 + rho*cp*u/(2*dx)
-                            matrix_a[k, k] = -2*kappa/dx**2 - 2*kappa/dy**2
-                            matrix_a[k, k+1] = kappa/dx**2 - rho*cp*u/(2*dx)
-                        else:
-                            matrix_a[k, k-2] = -rho*cp*u/(2*dx)
-                            matrix_a[k, k-1] = kappa/dx**2 + 4*rho*cp*u/(2*dx)
-                            matrix_a[k, k] = -2*kappa/dx**2 - 2*kappa/dy**2 - 3*rho*cp*u/(2*dx)
-                            matrix_a[k, k+1] = kappa/dx**2
-                    else:
-                        if j == nx-2:
-                            matrix_a[k, k-1] = kappa/dx**2 + rho*cp*u/(2*dx)
-                            matrix_a[k, k] = -2*kappa/dx**2 - 2*kappa/dy**2
-                            matrix_a[k, k+1] = kappa/dx**2 - rho*cp*u/(2*dx)
-                        else:
-                            matrix_a[k, k-1] = kappa/dx**2
-                            matrix_a[k, k] = -2*kappa/dx**2 - 2*kappa/dy**2 + 3*rho*cp*u/(2*dx)
-                            matrix_a[k, k+1] = kappa/dx**2 - 4*rho*cp*u/(2*dx)
-                            matrix_a[k, k+2] = rho*cp*u/(2*dx)
+    # C. Bas (Neumann/Robin) - excluant les coins (0 et nx-1)
+    for k in range(1, nx - 1):
+        if sym_test:
+            matrix_a.data[k] = [-3*kappa - 2*dy*h, 4*kappa, -kappa]
+            matrix_a.rows[k] = [k, k+nx, k+2*nx]
+            rhs[k] = -2*dy*h*tinf
+        else:
+            if bc_bottom is None:
+                matrix_a.data[k] = [-3.0, 4.0, -1.0]
+                matrix_a.rows[k] = [k, k+nx, k+2*nx]
+                rhs[k] = 0.0
+            else:
+                matrix_a.data[k] = [-3.0/(2*dy), 4.0/(2*dy), -1.0/(2*dy)]
+                matrix_a.rows[k] = [k, k+nx, k+2*nx]
+                rhs[k] = bc_bottom(x[k])
 
-                    if source_mms is None:
-                        rhs[k] = -f
-                    else:
-                        rhs[k] = -(f + source_mms(x[j], y[i]))
+    # D. Haut (Robin) - excluant les coins
+    for k in range(n_nodes - nx + 1, n_nodes - 1):
+        matrix_a.data[k] = [3*kappa + 2*dy*h, -4*kappa, kappa]
+        matrix_a.rows[k] = [k, k-nx, k-2*nx]
+        rhs[k] = 2*dy*h*tinf if bc_top_tinf is None else 2*dy*h*bc_top_tinf(x[k % nx])
 
+    # --- 5. RÉSOLUTION ---
     matrix_a = matrix_a.tocsr()
     t_array = spsolve(matrix_a, rhs)
 
