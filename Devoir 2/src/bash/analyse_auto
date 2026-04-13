@@ -1,0 +1,116 @@
+#!/usr/bin/bash
+#set -ex
+# But: ce script sert à lancer une analyse de convergence pour 
+#      un code numérique (p.ex. main_bash.py) passée
+#      argument 1 ($1) et un fichier de données d'entrée 
+#      (p.ex. liste_de_resolutions) passé en argument 2 ($2)
+#
+# Exemple depuis la racine du dossier Devoir 2 : bash src/bash/analyse_auto main_bash src/bash/liste_des_resolutions
+#
+
+# messages
+#---------
+USAGE="Usage: ./src/bash/analyse_auto {nom_du_programme_sans_.py} {chemin_vers_liste_resolutions}"
+#
+#====================================================================
+# vérifier si le script a le bon nombre d'arguments (2) ou abandonner
+#====================================================================
+  if test $# -ne 2
+  then echo "Nombre d'arguments erroné: $USAGE"
+       exit
+  fi
+#
+# ===============
+# initialisations
+# ===============
+#
+  editor=nano
+
+  nb_resolutions=`wc -l $2 | awk '{print $1}'` # nombre de résolution
+  nb_compt=1  # compteur de la boucle
+
+  # lecture des bornes a et b dans le fichier $1.cpp
+  borne_a=`grep 'a =' $1.py | awk '{print $5}'`
+  borne_b=`grep 'b =' $1.py | awk '{print $5}'`
+
+  # enlever des 2 derniers caractères (??) de la variable chaine
+  borne_a="${borne_a%??}"
+  borne_b="${borne_b%??}"
+
+
+  echo ""
+  echo "*******************************************"
+  echo "        ANALYSE DE CONVERGENCE"
+  echo "*******************************************"
+  echo ""
+  echo "--> Nombre de résolutions testées : "$nb_resolutions
+  echo ""
+
+  echo "Analyse de convergence:" > src/bash/resultats # écriture dans le fichier contenant les résultats
+  echo "" >> src/bash/resultats
+#
+# ------------------------------------------------
+# verifie si le fichier $1.py du programme existe
+# ------------------------------------------------
+#
+  if test -s $1.py ; then
+	  echo "--> Le fichier "$1".py existe !"
+	  echo ""
+          
+  else echo "ALERTE: Le fichier "$1".py n'existe pas ! Sortie du script..."
+       exit
+  fi
+#
+# Boucle principale sur le nombre de résolution
+#
+
+  while [[ nb_compt -le nb_resolutions ]]; do
+
+    # Lecture des deux colonnes (Espace et Temps)
+    ligne=$(head -$nb_compt $2 | tail -1)
+    res_espace=$(echo "$ligne" | awk '{print $1}')
+    res_temps=$(echo "$ligne" | awk '{print $2}')
+
+    echo "--> Calcul pour Espace (nr): $res_espace et Temps (nt): $res_temps ...."
+    echo "Résultats pour Espace=$res_espace, Temps=$res_temps :" >> src/bash/resultats
+
+    # Création d'un fichier temporaire à la racine pour préserver les chemins d'importation (src...)
+    sed -e "s/noeuds_spatiaux *= *[0-9]*/noeuds_spatiaux = $res_espace/" -e "s/noeuds_temporels *= *[0-9]*/noeuds_temporels = $res_temps/" $1.py > $1_temp.py
+
+    # Exécution du programme Python
+    python3 $1_temp.py >> src/bash/resultats
+
+    # Nettoyage du fichier temporaire
+    rm -f $1_temp.py
+
+    echo ".... Done !"
+    nb_compt=`expr $nb_compt + 1`
+  done
+
+  # sortie de la boucle
+
+  # extraction des erreurs absolues dans le fichier de compilation des resultats
+  # et récriture de ces seules valeurs dans le fichier "erreurs"
+  grep 'Error L1 =' src/bash/resultats | awk '{print $4}' > src/bash/erreurs_l1
+  grep 'Error L2 =' src/bash/resultats | awk '{print $4}' > src/bash/erreurs_l2
+  grep 'Error Linf =' src/bash/resultats | awk '{print $4}' > src/bash/erreurs_inf
+  
+  echo ""
+  echo "--> Exécution du script python..."
+  echo ""
+
+  # exécution en arrière plan (&) du programme python analyse_de_convergence.py traçant
+  # le graphe et obtenant la régression en loi de puissance
+  python3 src/bash/analyse_de_convergence.py &
+
+  sleep 6
+ 
+  echo ""
+  echo "--> Génération du graphique de convergence terminée"
+  echo ""
+  echo "*******************************************"
+  echo "     ANALYSE DE CONVERGENCE TERMINÉE"
+  echo "*******************************************"
+  echo ""
+
+  exit

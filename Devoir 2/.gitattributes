@@ -1,0 +1,10 @@
+# Détection automatique du texte pour tous les fichiers
+* text=auto
+
+# Forcer l'utilisation de LF (Linux) pour les scripts Bash et fichiers de données
+# Cela évite les erreurs "\r: command not found" sur WSL
+src/bash/analyse_auto text eol=lf
+src/bash/liste_des_resolutions text eol=lf
+
+# S'assurer que les fichiers Python utilisent aussi LF
+*.py text eol=lf

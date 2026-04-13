@@ -1,0 +1,23 @@
+Procédure d'utilisation de l'analyse automatisée
+-----------------------------------------------------------
+
+**Prérequis :**
+Assurez-vous d'avoir un environnement Linux (WSL) ou Git Bash, ainsi que Python 3 et les librairies nécessaires (`numpy`, `matplotlib`, `sympy`). 
+Sous WSL, installez-les avec : `sudo apt install python3-numpy python3-matplotlib python3-sympy`
+
+**1) Configuration des résolutions :**
+Les tests de convergence se configurent dans le fichier `src/bash/liste_des_resolutions`.
+Ce fichier doit impérativement contenir DEUX colonnes séparées par un espace :
+- Colonne 1 : Nombre de nœuds spatiaux (nr)
+- Colonne 2 : Nombre de nœuds temporels (nt)
+Assurez-vous qu'il y ait une ligne vide (line break) à la fin du fichier pour que Bash puisse correctement le lire.
+
+**2) Exécution du script :**
+Ouvrez votre terminal et naviguez jusqu'à la racine du devoir 2 (le dossier qui contient le fichier `main.py`).
+Lancez l'analyse automatisée avec la commande suivante :
+
+bash src/bash/analyse_auto main src/bash/liste_des_resolutions
+
+**3) Résultats :**
+Le script va modifier dynamiquement les valeurs de noeuds_spatiaux et noeuds_temporels dans un fichier temporaire, exécuter les simulations, extraire les erreurs absolues et lancer l'analyse en loi de puissance.
+Le graphique de convergence final sera généré et sauvegardé automatiquement dans le répertoire `results/` à la racine.

@@ -1,0 +1,27 @@
+# --- Dossiers spécifiques au projet ---
+results/
+
+# --- Caches et fichiers compilés Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+
+# --- Environnements virtuels ---
+venv/
+env/
+.env
+
+# --- Outils de tests et de couverture ---
+.pytest_cache/
+.coverage
+htmlcov/
+
+# --- Fichiers d'éditeurs de code (IDE) ---
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# --- Fichiers système (Windows / macOS) ---
+.DS_Store
+Thumbs.db

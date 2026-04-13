@@ -30,20 +30,20 @@ if __name__ == "__main__":
 
     # Appel de la fonction MMS pour générer les fonctions analytiques
     f_C_exacte, f_terme_source = generer_mms(
-        params=params,
-        nr=intervales_spatiaux,
-        nt=intervales_temporels,
+        params=params, 
+        nr=intervales_spatiaux, 
+        nt=intervales_temporels, 
         afficher_graphiques=False
     )
 
     # Appel du solveur numérique
-    discretisation, tableau_temps, concentration_num_2d = second_order(
+    discretisation, tableau_temps, concentration_num_2d = first_order(
         params, 
         intervales_spatiaux, 
         f_source=f_terme_source, 
         f_exacte=f_C_exacte
     )
-
+    
     # Évaluation de la solution analytique exacte sur TOUT le domaine spatio-temporel
     grille_temps, grille_espace = np.meshgrid(tableau_temps, discretisation, indexing='ij')
     concentration_exacte_2d = f_C_exacte(grille_temps, grille_espace)
@@ -57,4 +57,3 @@ if __name__ == "__main__":
     print(f"Error L1 = {err_l1}")
     print(f"Error L2 = {err_l2}")
     print(f"Error Linf = {err_inf}")
-    

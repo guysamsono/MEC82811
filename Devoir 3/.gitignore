@@ -1,0 +1,17 @@
+# Ignorer les résultats
+results/*.png
+results/*.jpg
+results/*.pdf
+results/*.tiff
+
+# Ignorer les pycache
+__pycache__/
+*.py[cod]
+src/__pycache__/
+
+# Ignorer fichiers systèmes
+.DS_Store
+Thumbs.db
+
+# Ignore fiber_mat.tiff
+fiber_mat.tiff
