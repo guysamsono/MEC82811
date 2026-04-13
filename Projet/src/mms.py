@@ -36,12 +36,15 @@ def generer_mms_simple(input_dict: dict):
     d = input_dict['d']
     f = input_dict['f']
     h = input_dict['h']
+    temp_a = input_dict['temp_a']
+    temp_b = input_dict['temp_b']
+    tinf = input_dict['tinf']
 
     # Définition des variables symboliques
     x, y = sp.symbols('x y')
 
     # Solution manufacturée (parenthèses ajoutées pour respecter la limite de ligne)
-    t_mms = (100 + sp.sin(sp.pi * x / b) + sp.cos(sp.pi * y / (2 * c)) +
+    t_mms = (temp_a + sp.sin(sp.pi * x / b) + sp.cos(sp.pi * y / (2 * c)) +
              sp.sin(2 * sp.pi * x / b) * sp.cos(2 * sp.pi * y / (2 * c)))
 
     # Calcul des dérivées
@@ -93,10 +96,10 @@ def generer_mms_simple(input_dict: dict):
     plt.figure(figsize=(8, 4))
     contour1 = plt.contourf(xdom, ydom, z_mms.T, 100, cmap='hot')
     plt.gca().set_aspect('equal', adjustable='box')
-    plt.colorbar(contour1, label='Temperature')
+    plt.colorbar(contour1, label='Temperature [K]')
     plt.title('Temperature distribution for MMS solution')
-    plt.xlabel('x')
-    plt.ylabel('y')
+    plt.xlabel('x [m]')
+    plt.ylabel('y [m]')
     plt.tight_layout()
     plt.savefig(os.path.join(mms_dir, "MMS_solution.png"), dpi=300)
     plt.close()
@@ -104,10 +107,10 @@ def generer_mms_simple(input_dict: dict):
     plt.figure(figsize=(8, 4))
     contour2 = plt.contourf(xdom, ydom, z_source.T, 100, cmap='viridis')
     plt.gca().set_aspect('equal', adjustable='box')
-    plt.colorbar(contour2, label='Terme source S(x,y) [W/m³]')
+    plt.colorbar(contour2, label='Source term S(x,y) [W/m³]')
     plt.title('Source distribution')
-    plt.xlabel('x')
-    plt.ylabel('y')
+    plt.xlabel('x [m]')
+    plt.ylabel('y [m]')
     plt.tight_layout()
     plt.savefig(os.path.join(mms_dir, "MMS_source.png"), dpi=300)
     plt.close()
@@ -127,7 +130,7 @@ def mms_convergence_analysis(input_dict: dict, order, scheme='central'):
 
     local_dict = input_dict.copy()
 
-    maille_list = [100, 200, 300]
+    maille_list = [101, 201, 401]
     discretization_list = [local_dict['b'] / (nx - 1) for nx in maille_list]
 
     l1_list_x = []
@@ -162,8 +165,8 @@ def mms_convergence_analysis(input_dict: dict, order, scheme='central'):
         linf_list_x.append(norm_infinity(temperature_sim, temperature_mms))
 
     graph_error_log(
-        local_dict, discretization_list, l1_list_x, l2_list_x, linf_list_x, 1,
-        'x', file_name=f"convergence_x_order_{order}.png",
+        local_dict, discretization_list, l1_list_x, l2_list_x, linf_list_x, order,
+        'x et y', file_name=f"convergence_x_order_{order}.png",
         show_fig=False, xlabel=r"Taille de maille"
     )
 

@@ -13,7 +13,7 @@ def graph_error_log(input_dict: dict,
                     variable_convergence,
                     file_name="convergence.png",
                     show_fig=False,
-                    xlabel=r"Taille de maille"):
+                    xlabel=r"Taille de maille (dx*dy)[m²]"):
     """
     Affiche les erreurs L1, L2 et Linf en échelle log-log.
 
@@ -50,10 +50,10 @@ def graph_error_log(input_dict: dict,
     plt.loglog(discretization, l2_list, 's-', label=r"$L_2$")
     plt.loglog(discretization, linf_list, '^-', label=r"$L_\infty$")
 
-    plt.xlabel(xlabel)
+    plt.xlabel('Taille de maille (dx*dy) [m²]')
     plt.ylabel("Erreur")
     plt.title(
-        f"Convergence de la solution numérique ({order})\n"
+        f"Convergence de la solution numérique d'ordre {order}\n"
         f"Variable raffinée : {variable_convergence}\n"
         f"rho={rho}, cp={cp}, k={kappa}, f={f}, h={h}"
     )
@@ -94,7 +94,7 @@ def print_convergence_table(n_points_list, discretization_list,
     print(f"ANALYSE DE CONVERGENCE DE L'ORDRE {order}: Norme {label}")
     print(f"{'='*60}")
 
-    header = f"{'N points':^10} | {'dr [m]':^12} | {'Erreur':^12} | {'Ordre p':^10}"
+    header = f"{'N points':^10} | {'dm [m²]':^12} | {'Erreur':^12} | {'Ordre p':^10}"
     print(header)
     print(f"{'-'*11}|{'-'*14}|{'-'*14}|{'-'*12}")
 
