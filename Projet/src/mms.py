@@ -11,7 +11,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sympy as sp
 
-from src.solver import solver_first_order, solver_second_order, mms_temperature
+from src.solver import solver_first_order, solver_second_order, mms_temperature, compute_conservation_of_energy
 from src.error import norm_l1, norm_l2, norm_infinity
 from src.convergence import graph_error_log, print_convergence_table
 
@@ -37,15 +37,17 @@ def generer_mms_simple(input_dict: dict):
     f = input_dict['f']
     h = input_dict['h']
     temp_a = input_dict['temp_a']
-    temp_b = input_dict['temp_b']
     tinf = input_dict['tinf']
 
     # Définition des variables symboliques
     x, y = sp.symbols('x y')
 
     # Solution manufacturée (parenthèses ajoutées pour respecter la limite de ligne)
-    t_mms = (temp_a + sp.sin(sp.pi * x / b) + sp.cos(sp.pi * y / (2 * c)) +
-             sp.sin(2 * sp.pi * x / b) * sp.cos(2 * sp.pi * y / (2 * c)))
+    t_mms = (
+        temp_a
+        + sp.sin(sp.pi * x / (2 * b)) * sp.cos(sp.pi * y / (2 * c))
+        + 0.5 * (1 - sp.cos(sp.pi * x / b)) * sp.cos(sp.pi * y / c)
+    )
 
     # Calcul des dérivées
     t_x = sp.diff(t_mms, x)
@@ -62,7 +64,7 @@ def generer_mms_simple(input_dict: dict):
     t_boundary_2 = sp.simplify(t_mms.subs(x, 0))
 
     # Gamma 4 : x = b
-    t_boundary_4 = sp.simplify(t_mms.subs(x, b))
+    dt_dx_boundary_4 = sp.simplify(sp.diff(t_mms, x).subs(x, b))
 
     # Gamma 3 : y = 0, Neumann = dT/dy(x,0)
     dt_dy_boundary_3 = sp.simplify(sp.diff(t_mms, y).subs(y, 0))
@@ -76,7 +78,7 @@ def generer_mms_simple(input_dict: dict):
     f_t_mms = sp.lambdify((x, y), t_mms, "numpy")
     f_source = sp.lambdify((x, y), source, "numpy")
     f_bc_left = sp.lambdify(y, t_boundary_2, "numpy")
-    f_bc_right = sp.lambdify(y, t_boundary_4, "numpy")
+    f_bc_right = sp.lambdify(y, dt_dx_boundary_4, "numpy")
     f_bc_bottom = sp.lambdify(x, dt_dy_boundary_3, "numpy")
     f_tinf_top = sp.lambdify(x, t_inf_top, "numpy")
 
@@ -128,34 +130,40 @@ def mms_convergence_analysis(input_dict: dict, order, scheme='central'):
     """
     # pylint: disable=too-many-locals
 
-    local_dict = input_dict.copy()
-
     maille_list = [101, 201, 401]
-    discretization_list = [local_dict['b'] / (nx - 1) for nx in maille_list]
+    discretization_list = [input_dict['b'] / (nx - 1) for nx in maille_list]
 
     l1_list_x = []
     l2_list_x = []
     linf_list_x = []
 
     for n in maille_list:
+        local_dict = input_dict.copy()
         local_dict['nx'] = n
         local_dict['ny'] = n
 
-        # Utilisation de parenthèses ou de backslash pour couper les lignes trop longues
         f_t_mms, f_source, f_bc_left, f_bc_right, f_bc_bottom, f_tinf_top = \
             generer_mms_simple(local_dict)
 
         if order == '1':
             temperature_sim = solver_first_order(
-                local_dict, sym_test=False, source_mms=f_source,
-                bc_left=f_bc_left, bc_right=f_bc_right,
-                bc_bottom=f_bc_bottom, bc_top_tinf=f_tinf_top
+                local_dict,
+                sym_test=False,
+                source_mms=f_source,
+                bc_left=f_bc_left,
+                bc_right=f_bc_right,
+                bc_bottom=f_bc_bottom,
+                bc_top_tinf=f_tinf_top
             )
         else:
             temperature_sim = solver_second_order(
-                local_dict, scheme, sym_test=False, source_mms=f_source,
-                bc_left=f_bc_left, bc_right=f_bc_right,
-                bc_bottom=f_bc_bottom, bc_top_tinf=f_tinf_top
+                local_dict,
+                scheme=scheme,
+                sym_test=False,
+                source_mms=f_source,
+                bc_left=f_bc_left,
+                bc_bottom=f_bc_bottom,
+                bc_top_tinf=f_tinf_top
             )
 
         temperature_mms = mms_temperature(local_dict, f_t_mms)
@@ -164,10 +172,21 @@ def mms_convergence_analysis(input_dict: dict, order, scheme='central'):
         l2_list_x.append(norm_l2(temperature_sim, temperature_mms))
         linf_list_x.append(norm_infinity(temperature_sim, temperature_mms))
 
+    final_dict = input_dict.copy()
+    final_dict['nx'] = maille_list[-1]
+    final_dict['ny'] = maille_list[-1]
+
     graph_error_log(
-        local_dict, discretization_list, l1_list_x, l2_list_x, linf_list_x, order,
-        'x et y', file_name=f"convergence_x_order_{order}.png",
-        show_fig=False, xlabel=r"Taille de maille"
+        final_dict,
+        discretization_list,
+        l1_list_x,
+        l2_list_x,
+        linf_list_x,
+        order,
+        'x et y',
+        file_name=f"convergence_x_order_{order}.png",
+        show_fig=False,
+        xlabel=r"Taille de maille"
     )
 
     print_convergence_table(maille_list, discretization_list, l1_list_x, str(order), "L1 en x")

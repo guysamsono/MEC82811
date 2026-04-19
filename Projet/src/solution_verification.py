@@ -207,8 +207,8 @@ def solution_verification(input_dict, order=2, scheme='central'):
         else:
             raise ValueError("L'ordre doit être 1 ou 2.")
 
-        srq_heat_full.append(compute_boundary_fluxes(temp, local_dict, 0.0))
-        srq_heat_40.append(compute_boundary_fluxes(temp, local_dict, 0.4))
+        srq_heat_full.append(compute_boundary_fluxes(temp, local_dict, 0.0, 1.0))
+        srq_heat_40.append(compute_boundary_fluxes(temp, local_dict, 0.3, 0.7))
         srq_temp_moy.append(compute_average_temperature(temp, local_dict))
         srq_temp_pt.append(compute_temperature_at_y(temp, local_dict, 0.8, 0.8))
 
@@ -256,12 +256,16 @@ def post_processing_verification(input_dict):
     post_proc_dir = os.path.join(input_dict['save_path'], 'POST_PROCESSING')
     os.makedirs(post_proc_dir, exist_ok=True)
 
-    maille_list = [100, 200, 400, 800, 1600]
+    maille_list = [101, 201, 401, 801, 1601]
     local_dict = input_dict.copy()
 
     f_t_mms, *_ = generer_mms_simple(local_dict)
 
-    srq_list = []
+    temp_average_list = []
+    heat_transfer_list = []
+    temp_average_list = []
+    temp_point_list = []
+    heat_transfer_20_list = []
 
     for n in maille_list:
         local_dict['nx'] = n
@@ -269,18 +273,43 @@ def post_processing_verification(input_dict):
 
         temperature_exact = mms_temperature(local_dict, f_t_mms)
         heat_transfer = compute_boundary_fluxes(temperature_exact, local_dict, 0.0)
+        temp_average = compute_average_temperature(temperature_exact, local_dict)
+        temp_point = compute_temperature_at_y(temperature_exact, local_dict, 0.8, 0.8)
+        heat_transfer_20 = compute_boundary_fluxes(temperature_exact, local_dict, 0.2)
 
-        srq_list.append(heat_transfer)
+        heat_transfer_list.append(heat_transfer)
+        temp_average_list.append(temp_average)
+        temp_point_list.append(temp_point)
+        heat_transfer_20_list.append(heat_transfer_20)
 
-    p_hat_rich = calcul_ordre_convergence_richardson(srq_list, maille_list, p_init=2)
-    p_hat = calcul_p_hat(srq_list, 2)
+    p_hat_rich_heat_transfer = calcul_ordre_convergence_richardson(heat_transfer_list, maille_list, p_init=2)
+    p_hat_rich_heat_transfer_20 = calcul_ordre_convergence_richardson(heat_transfer_20_list, maille_list, p_init=2)
+    p_hat_rich_temp_average = calcul_ordre_convergence_richardson(temp_average_list, maille_list, p_init=2)
+    #p_hat_rich_temp_point = calcul_ordre_convergence_richardson(temp_point_list, maille_list, p_init=2)
 
-    print(f"Ordre post-processing rich: {p_hat_rich}")
-    print(f"Ordre post-processing simple: {p_hat}")
+    print(f"Ordre post-processing rich transfert de chaleur total : {p_hat_rich_heat_transfer}")
+    print(f"Ordre post-processing rich transfert de chaleur 20% : {p_hat_rich_heat_transfer_20}")
+    print(f"Ordre post-processing rich température moyenne : {p_hat_rich_temp_average}")
+    #print(f"Ordre post-processing rich température au point : {p_hat_rich_temp_point}")
 
     plot_relative_error_loglog(
-        srq_list, maille_list, input_dict,
-        filename="POST_PROCESSING/post_processing_verification.png"
+        heat_transfer_list, maille_list, input_dict,
+        filename="POST_PROCESSING/post_processing_verification_transfert_total.png"
+    )
+
+    plot_relative_error_loglog(
+        heat_transfer_20_list, maille_list, input_dict,
+        filename="POST_PROCESSING/post_processing_verification_transfert_20.png"
+    )
+
+    plot_relative_error_loglog(
+        temp_average_list, maille_list, input_dict,
+        filename="POST_PROCESSING/post_processing_verification_temp_average.png"
+    )
+
+    plot_relative_error_loglog(
+        temp_point_list, maille_list, input_dict,
+        filename="POST_PROCESSING/post_processing_verification_temp_point.png"
     )
 
 

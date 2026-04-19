@@ -8,6 +8,10 @@ import numpy as np
 from scipy.sparse import lil_matrix, diags
 from scipy.sparse.linalg import spsolve
 
+def bc_top_tinf_fabriquee(x, input_dict):
+    tinf = input_dict['tinf']
+    return tinf
+
 
 def speed_function(c, d, y):
     """
@@ -23,41 +27,102 @@ def speed_function(c, d, y):
 
 
 # pylint: disable=too-many-locals
-def compute_conservation_of_energy(t_array, input_dict):
-    """Calcule le résidu de la conservation d'énergie globale (Vectorisé)."""
+def compute_conservation_of_energy(t_array, input_dict, source_mms=None):
+    """
+    Calcule le résidu de conservation d'énergie globale.
+
+    Convention :
+    flux sortant positif.
+
+    Bilan :
+        ∫_∂Ω (-k grad(T)·n + rho cp T u·n) dΓ
+        - ∫_Ω (f + source_mms) dΩ
+
+    Pour la MMS, passer source_mms=f_source.
+    """
+
     ny, nx = input_dict['ny'], input_dict['nx']
-    kappa, rho, cp = input_dict['k'], input_dict['rho'], input_dict['cp']
-    b, c, d, f = input_dict['b'], input_dict['c'], input_dict['d'], input_dict['f']
+    kappa = input_dict['k']
+    rho = input_dict['rho']
+    cp = input_dict['cp']
+    b = input_dict['b']
+    c = input_dict['c']
+    d = input_dict['d']
+    f = input_dict['f']
 
     t_mesh = np.asarray(t_array).reshape((ny, nx))
-    dx = b / (nx - 1)
-    dy = c / (ny - 1)
 
-    y_coords = np.linspace(0, c, ny)
-    u_edge = speed_function(c, d, y_coords)
+    x = np.linspace(0.0, b, nx)
+    y = np.linspace(0.0, c, ny)
 
-    # 1. Bord gauche (x = 0)
-    diff_gauche = kappa * (t_mesh[:, 1] - t_mesh[:, 0]) / dx * dy
-    conv_gauche = -rho * cp * u_edge * t_mesh[:, 0] * dy
+    dx = x[1] - x[0]
+    dy = y[1] - y[0]
 
-    # 2. Bord droit (x = b)
-    diff_droit = -kappa * (t_mesh[:, -1] - t_mesh[:, -2]) / dx * dy
-    conv_droit = rho * cp * u_edge * t_mesh[:, -1] * dy
+    u_y = speed_function(c, d, y)
 
-    # 3. Bord bas (y = 0)
-    diff_bas = kappa * (t_mesh[1, :] - t_mesh[0, :]) / dy * dx
+    # -----------------------------
+    # Flux diffusifs aux frontières
+    # -----------------------------
 
-    # 4. Bord haut (y = c)
-    diff_haut = -kappa * (t_mesh[-1, :] - t_mesh[-2, :]) / dy * dx
+    # Gauche x = 0, normale n = (-1, 0)
+    # flux diffusif sortant = -k grad(T)·n = k dT/dx
+    dTdx_left = (-3.0 * t_mesh[:, 0] + 4.0 * t_mesh[:, 1] - t_mesh[:, 2]) / (2.0 * dx)
+    qdiff_left = kappa * dTdx_left
 
-    total_flux_conservation = (np.sum(diff_gauche + conv_gauche) +
-                               np.sum(diff_droit + conv_droit) +
-                               np.sum(diff_bas) +
-                               np.sum(diff_haut))
+    # Droite x = b, normale n = (1, 0)
+    # flux diffusif sortant = -k dT/dx
+    dTdx_right = (3.0 * t_mesh[:, -1] - 4.0 * t_mesh[:, -2] + t_mesh[:, -3]) / (2.0 * dx)
+    qdiff_right = -kappa * dTdx_right
 
-    total_flux_conservation -= f * b * c
+    # Bas y = 0, normale n = (0, -1)
+    # flux diffusif sortant = k dT/dy
+    dTdy_bottom = (-3.0 * t_mesh[0, :] + 4.0 * t_mesh[1, :] - t_mesh[2, :]) / (2.0 * dy)
+    qdiff_bottom = kappa * dTdy_bottom
 
-    return total_flux_conservation
+    # Haut y = c, normale n = (0, 1)
+    # flux diffusif sortant = -k dT/dy
+    dTdy_top = (3.0 * t_mesh[-1, :] - 4.0 * t_mesh[-2, :] + t_mesh[-3, :]) / (2.0 * dy)
+    qdiff_top = -kappa * dTdy_top
+
+    # -----------------------------
+    # Flux convectifs
+    # -----------------------------
+    # Vitesse u = (u(y), 0)
+    # Gauche : u·n = -u(y)
+    # Droite : u·n = +u(y)
+
+    qconv_left = rho * cp * t_mesh[:, 0] * (-u_y)
+    qconv_right = rho * cp * t_mesh[:, -1] * u_y
+
+    # -----------------------------
+    # Intégrales de frontière
+    # -----------------------------
+
+    flux_left = np.trapz(qdiff_left + qconv_left, y)
+    flux_right = np.trapz(qdiff_right + qconv_right, y)
+    flux_bottom = np.trapz(qdiff_bottom, x)
+    flux_top = np.trapz(qdiff_top, x)
+
+    boundary_flux = flux_left + flux_right + flux_bottom + flux_top
+
+    # -----------------------------
+    # Intégrale volumique de source
+    # -----------------------------
+
+    x_mesh, y_mesh = np.meshgrid(x, y)
+
+    if source_mms is None:
+        source_total = f * np.ones_like(x_mesh)
+    else:
+        source_total = f + source_mms(x_mesh, y_mesh)
+
+    # Intégrale 2D trapézoïdale
+    source_integral_y = np.trapz(source_total, y, axis=0)
+    source_integral = np.trapz(source_integral_y, x)
+
+    residual = boundary_flux - source_integral
+
+    return residual
 
 def compute_average_temperature(t_array, input_dict):
     ny, nx = input_dict['ny'], input_dict['nx']
@@ -72,50 +137,147 @@ def compute_average_temperature(t_array, input_dict):
 
 def compute_temperature_at_y(t_array, input_dict, y_ratio=0.8, x_ratio=0.8):
     """
-    Calcule la température en un point du domaine situé à y = y_ratio * c
-    et x = x_ratio * b.
-
-    param t_array: tableau 1D des températures
-    param input_dict: dictionnaire contenant nx, ny, b, c
-    param y_ratio: position relative en y (entre 0 et 1)
-    param x_ratio: position relative en x (entre 0 et 1)
-
-    return: température au point choisi
+    Calcule la température en un point du domaine situé à
+    y = y_ratio * c et x = x_ratio * b
+    par interpolation bilinéaire.
     """
     ny = input_dict['ny']
     nx = input_dict['nx']
+    b = input_dict['b']
+    c = input_dict['c']
 
     t_mesh = np.asarray(t_array).reshape((ny, nx))
 
-    i = int(round(y_ratio * (ny - 1)))
-    j = int(round(x_ratio * (nx - 1)))
+    # Coordonnées physiques du point
+    x_target = x_ratio * b
+    y_target = y_ratio * c
 
-    temperature = t_mesh[i, j]
+    dx = b / (nx - 1)
+    dy = c / (ny - 1)
+
+    # Cas limites pour éviter les débordements
+    x_target = min(max(x_target, 0.0), b)
+    y_target = min(max(y_target, 0.0), c)
+
+    # Indices de la cellule contenant le point
+    j0 = int(np.floor(x_target / dx))
+    i0 = int(np.floor(y_target / dy))
+
+    # Si on tombe sur le dernier nœud, on force la cellule précédente
+    if j0 >= nx - 1:
+        j0 = nx - 2
+    if i0 >= ny - 1:
+        i0 = ny - 2
+
+    j1 = j0 + 1
+    i1 = i0 + 1
+
+    # Coordonnées des 4 nœuds entourant le point
+    x0 = j0 * dx
+    x1 = j1 * dx
+    y0 = i0 * dy
+    y1 = i1 * dy
+
+    # Valeurs aux 4 coins
+    t00 = t_mesh[i0, j0]
+    t10 = t_mesh[i0, j1]
+    t01 = t_mesh[i1, j0]
+    t11 = t_mesh[i1, j1]
+
+    # Poids d'interpolation
+    if x1 == x0:
+        wx = 0.0
+    else:
+        wx = (x_target - x0) / (x1 - x0)
+
+    if y1 == y0:
+        wy = 0.0
+    else:
+        wy = (y_target - y0) / (y1 - y0)
+
+    # Interpolation bilinéaire
+    temperature = (
+        (1 - wx) * (1 - wy) * t00 +
+        wx * (1 - wy) * t10 +
+        (1 - wx) * wy * t01 +
+        wx * wy * t11
+    )
 
     return temperature
 
 
-# pylint: disable=too-many-locals
-def compute_boundary_fluxes(t_array, input_dict, margin_ratio=0.2):
-    """Calcule le flux de chaleur à travers la frontière supérieure (Vectorisé)."""
+def compute_boundary_fluxes(
+        t_array,
+        input_dict,
+        x_start_ratio=0.0,
+        x_end_ratio=1.0
+):
+    """
+    Calcule le flux de chaleur à travers une portion de la frontière supérieure.
+
+    La portion intégrée est définie par :
+
+        x_start = x_start_ratio * b
+        x_end   = x_end_ratio * b
+
+    Exemples :
+        x_start_ratio=0.2, x_end_ratio=0.8  -> portion centrale 60 %
+        x_start_ratio=0.0, x_end_ratio=1.0  -> frontière complète
+        x_start_ratio=0.1, x_end_ratio=0.4  -> portion non centrée à gauche
+        x_start_ratio=0.6, x_end_ratio=0.9  -> portion non centrée à droite
+
+    Les bornes sont interpolées si elles ne tombent pas exactement sur des nœuds.
+    """
+
     ny, nx = input_dict['ny'], input_dict['nx']
-    kappa, b, c = input_dict['k'], input_dict['b'], input_dict['c']
+    kappa = input_dict['k']
+    b = input_dict['b']
+    c = input_dict['c']
 
     t_mesh = np.asarray(t_array).reshape((ny, nx))
-    dx = b / (nx - 1)
+
     dy = c / (ny - 1)
 
-    flux_top = -kappa * (3*t_mesh[-1, :] - 4*t_mesh[-2, :] + t_mesh[-3, :]) / (2*dy)
+    x_nodes = np.linspace(0.0, b, nx)
 
-    x_start = b * margin_ratio
-    x_end = b * (1 - margin_ratio)
-    i_start = int(round(x_start / dx))
-    i_end = int(round(x_end / dx))
+    # Flux diffusif sur tous les nœuds du bord supérieur
+    flux_top = -kappa * (
+        3.0 * t_mesh[-1, :]
+        - 4.0 * t_mesh[-2, :]
+        + t_mesh[-3, :]
+    ) / (2.0 * dy)
 
-    flux_top_center = flux_top[i_start : i_end + 1]
-    heat_transfer = np.trapezoid(flux_top_center, dx=dx)
+    # Sécurité sur les ratios
+    if not (0.0 <= x_start_ratio <= 1.0):
+        raise ValueError("x_start_ratio doit être entre 0 et 1.")
 
-    return  heat_transfer
+    if not (0.0 <= x_end_ratio <= 1.0):
+        raise ValueError("x_end_ratio doit être entre 0 et 1.")
+
+    if x_end_ratio < x_start_ratio:
+        raise ValueError("x_end_ratio doit être supérieur ou égal à x_start_ratio.")
+
+    # Bornes physiques
+    x_start = b * x_start_ratio
+    x_end = b * x_end_ratio
+
+    # Interpolation linéaire du flux aux bornes
+    flux_start = np.interp(x_start, x_nodes, flux_top)
+    flux_end = np.interp(x_end, x_nodes, flux_top)
+
+    # Nœuds strictement à l'intérieur de l'intervalle
+    mask = (x_nodes > x_start) & (x_nodes < x_end)
+    x_interior = x_nodes[mask]
+    flux_interior = flux_top[mask]
+
+    # Reconstruction du profil sur l'intervalle exact demandé
+    x_eval = np.concatenate(([x_start], x_interior, [x_end]))
+    flux_eval = np.concatenate(([flux_start], flux_interior, [flux_end]))
+
+    # Intégration trapézoïdale
+    heat_transfer = np.trapezoid(flux_eval, x=x_eval)
+
+    return heat_transfer
 
 
 # pylint: disable=too-many-arguments, too-many-positional-arguments, too-many-locals
@@ -144,7 +306,6 @@ def solver_first_order(
     kappa = input_dict['k']
     f = input_dict['f']
     temp_a = input_dict['temp_a']
-    temp_b = input_dict['temp_b']
     h = input_dict['h']
     tinf = input_dict['tinf']
 
@@ -164,68 +325,83 @@ def solver_first_order(
         for j in range(nx):
             k = i * nx + j
 
-            if j == 0:
-                # condition de dirichlet
-                matrix_a[k, k] = 1
+            # ------------------------------------------------------------
+            # 1. Haut : Robin, coins inclus
+            # ------------------------------------------------------------
+          
+            if i == ny - 1:
+                matrix_a[k, k] = kappa + h * dy
+                matrix_a[k, k - nx] = -kappa
+
+                if bc_top_tinf is None:
+                    rhs[k] = h * dy * tinf
+                else:
+                    rhs[k] = h * dy * bc_top_tinf(x[j])
+
+            # ------------------------------------------------------------
+            # 2. Gauche : Dirichlet, sauf coin supérieur gauche
+            # ------------------------------------------------------------
+            elif j == 0:
+                matrix_a[k, k] = 1.0
+
                 if bc_left is None:
                     rhs[k] = temp_a
                 else:
                     rhs[k] = bc_left(y[i])
 
-            elif j == nx-1:
-                # condition de dirichlet
-                matrix_a[k, k] = 1
-                if bc_right is None:
-                    rhs[k] = temp_b
-                else:
-                    rhs[k] = bc_right(y[i])
+            # ------------------------------------------------------------
+            # 3. Droite : Neumann, sauf coin supérieur droit
+            # ------------------------------------------------------------
+           
+            elif j == nx - 1:
+                matrix_a[k, k] = 1.0 / dx
+                matrix_a[k, k - 1] = -1.0 / dx
 
-            elif sym_test and i == 0:
-                # condition de robin
-                matrix_a[k, k] = -(h*dy + kappa)
-                matrix_a[k, k+nx] = kappa
-                rhs[k] = -dy*h*tinf
+                rhs[k] = 0.0 if bc_right is None else bc_right(y[i])
 
-            elif not sym_test and i == 0:
-                # condition de neumman (symmétrie)
-                if bc_bottom is None:
-                    matrix_a[k, k] = 1
-                    matrix_a[k, k+nx] = -1
-                    rhs[k] = 0
+            # ------------------------------------------------------------
+            # 4. Bas
+            # ------------------------------------------------------------
+            elif i == 0:
+                if sym_test:
+                    matrix_a[k, k] = -(h * dy + kappa)
+                    matrix_a[k, k + nx] = kappa
+                    rhs[k] = -dy * h * tinf
                 else:
                     matrix_a[k, k] = -1.0 / dy
                     matrix_a[k, k + nx] = 1.0 / dy
-                    rhs[k] = bc_bottom(x[j])
+                    rhs[k] = 0.0 if bc_bottom is None else bc_bottom(x[j])
 
-            elif i == ny-1:
-                # condition de robin
-                matrix_a[k, k] = kappa + h*dy
-                matrix_a[k, k-nx] = -kappa
-                if bc_top_tinf is None:
-                    rhs[k] = h*dy*tinf
-                else:
-                    rhs[k] = h*dy*bc_top_tinf(x[j])
-
+            # ------------------------------------------------------------
+            # 5. Noeuds intérieurs
+            # ------------------------------------------------------------
             else:
-                # noeud intérieur
                 u = speed_function(c, d, y[i])
 
-                matrix_a[k, k-nx] = kappa/dy**2
-                matrix_a[k, k+nx] = kappa/dy**2
+                matrix_a[k, k - nx] = kappa / dy**2
+                matrix_a[k, k + nx] = kappa / dy**2
 
                 if u >= 0:
-                    matrix_a[k, k-1] = rho*cp*u/dx + kappa/dx**2
-                    matrix_a[k, k] = -rho*cp*u/dx - 2*kappa/dx**2 - 2*kappa/dy**2
-                    matrix_a[k, k+1] = kappa/dx**2
+                    matrix_a[k, k - 1] = rho * cp * u / dx + kappa / dx**2
+                    matrix_a[k, k] = (
+                        -rho * cp * u / dx
+                        - 2.0 * kappa / dx**2
+                        - 2.0 * kappa / dy**2
+                    )
+                    matrix_a[k, k + 1] = kappa / dx**2
                 else:
-                    matrix_a[k, k-1] = kappa/dx**2
-                    matrix_a[k, k] = rho*cp*u/dx - 2*kappa/dx**2 - 2*kappa/dy**2
-                    matrix_a[k, k+1] = kappa/dx**2 - rho*cp*u/dx
+                    matrix_a[k, k - 1] = kappa / dx**2
+                    matrix_a[k, k] = (
+                        rho * cp * u / dx
+                        - 2.0 * kappa / dx**2
+                        - 2.0 * kappa / dy**2
+                    )
+                    matrix_a[k, k + 1] = kappa / dx**2 - rho * cp * u / dx
 
-                if source_mms is not None:
-                    rhs[k] = -(f + source_mms(x[j], y[i]))
-                else:
+                if source_mms is None:
                     rhs[k] = -f
+                else:
+                    rhs[k] = -(f + source_mms(x[j], y[i]))
 
     matrix_a = matrix_a.tocsr()
     t_array = spsolve(matrix_a, rhs)
@@ -237,15 +413,24 @@ def solver_first_order(
 # pylint: disable=too-many-branches, too-many-statements, too-many-nested-blocks
 def solver_second_order(
         input_dict, scheme='central', sym_test=False, source_mms=None,
-        bc_left=None, bc_right=None, bc_bottom=None, bc_top_tinf=None
+        bc_left=None, bc_bottom=None, bc_top_tinf=None,bc_right=None
 ):
     """
     Résout l'équation de convection-diffusion via une approche vectorisée hybride.
+
+    Conditions:
+    - gauche  : Dirichlet
+    - droite  : Neumann nulle
+    - bas     : Neumann (ou Robin si sym_test=True)
+    - haut    : Robin, coins inclus
+
+    Si bc_top_tinf is None, une Robin fabriquée lisse est utilisée:
+        T_inf(x) = Ta + (Tb - Ta) * (3*xi^2 - 2*xi^3), xi = x/b
     """
     b, c, d = input_dict['b'], input_dict['c'], input_dict['d']
     nx, ny = input_dict['nx'], input_dict['ny']
     rho, cp, kappa, f = input_dict['rho'], input_dict['cp'], input_dict['k'], input_dict['f']
-    temp_a, temp_b = input_dict['temp_a'], input_dict['temp_b']
+    temp_a = input_dict['temp_a']
     h, tinf = input_dict['h'], input_dict['tinf']
 
     x = np.linspace(0, b, nx)
@@ -261,15 +446,14 @@ def solver_second_order(
     diff_x, diff_y = kappa / dx**2, kappa / dy**2
     adv_flat = rho * cp * u_flat / (2 * dx)
 
-    # Indice j (colonne) pour chaque nœud (0 à nx-1 répété)
     j_flat = np.tile(np.arange(nx), ny)
 
-    # --- 2. CONSTRUCTION DES DIAGONALES (Nœuds intérieurs) ---
+    # --- 2. CONSTRUCTION DES DIAGONALES ---
     south_diag = np.full(n_nodes - nx, diff_y)
     north_diag = np.full(n_nodes - nx, diff_y)
 
     if scheme == 'central':
-        main_diag = np.full(n_nodes, -2*diff_x - 2*diff_y)
+        main_diag = np.full(n_nodes, -2 * diff_x - 2 * diff_y)
         west_diag = diff_x + adv_flat[1:]
         east_diag = diff_x - adv_flat[:-1]
 
@@ -277,79 +461,88 @@ def solver_second_order(
         offsets = [0, -nx, nx, -1, 1]
 
     elif scheme == 'upwind':
-        # LE SECRET DE LA STABILITÉ EST ICI :
-        # j_flat == 1 -> Upwind ordre 1 (Inconditionnellement stable).
-        # j_flat > 1  -> Upwind ordre 2.
+        main_diag = np.where(
+            j_flat > 1,
+            -2 * diff_x - 2 * diff_y - 3 * adv_flat,
+            np.where(
+                j_flat == 1,
+                -2 * diff_x - 2 * diff_y - 2 * adv_flat,
+                -2 * diff_x - 2 * diff_y
+            )
+        )
 
-        main_diag = np.where(j_flat > 1,
-                             -2*diff_x - 2*diff_y - 3*adv_flat,
-                             np.where(j_flat == 1,
-                                      -2*diff_x - 2*diff_y - 2*adv_flat,
-                                      -2*diff_x - 2*diff_y))
-
-        west_diag = np.where(j_flat[1:] > 1,
-                             diff_x + 4*adv_flat[1:],
-                             diff_x + 2*adv_flat[1:])
+        west_diag = np.where(
+            j_flat[1:] > 1,
+            diff_x + 4 * adv_flat[1:],
+            diff_x + 2 * adv_flat[1:]
+        )
 
         east_diag = np.full(n_nodes - 1, diff_x)
-
         ww_diag = np.where(j_flat[2:] > 1, -adv_flat[2:], 0.0)
 
         diagonals = [main_diag, south_diag, north_diag, west_diag, east_diag, ww_diag]
         offsets = [0, -nx, nx, -1, 1, -2]
 
-    # Génération instantanée de la matrice creuse avec diags
+    else:
+        raise ValueError("scheme doit être 'central' ou 'upwind'")
+
     matrix_a = diags(diagonals, offsets, shape=(n_nodes, n_nodes), format='lil')
 
-    # --- 3. VECTEUR SOURCE (RHS) ---
+    # --- 3. RHS ---
     if source_mms is None:
         rhs = np.full(n_nodes, -f, dtype=float)
     else:
         rhs = -(f + source_mms(x_mesh.flatten(), y_flat))
 
-    # --- 4. ÉCRASEMENT DES CONDITIONS AUX LIMITES ---
-    # Cette méthode accède directement à l'architecture de lil_matrix pour des perfs maximales
+    # --- 4. CONDITIONS AUX LIMITES ---
 
-    # A. Gauche (Dirichlet)
-    for k in range(0, n_nodes, nx):
+    # A. Gauche (Dirichlet), sauf coin supérieur gauche
+    for i in range(ny - 1):
+        k = i * nx
         matrix_a.data[k] = [1.0]
         matrix_a.rows[k] = [k]
-        rhs[k] = temp_a if bc_left is None else bc_left(y[k // nx])
+        rhs[k] = temp_a if bc_left is None else bc_left(y[i])
 
-    # B. Droite (Dirichlet)
-    for k in range(nx - 1, n_nodes, nx):
-        matrix_a.data[k] = [1.0]
-        matrix_a.rows[k] = [k]
-        rhs[k] = temp_b if bc_right is None else bc_right(y[k // nx])
+    # B. Droite (Neumann nulle), sauf coin supérieur droit
+    for i in range(ny - 1):
+        k = i * nx + (nx - 1)
+        matrix_a.data[k] = [3.0 / (2 * dx), -4.0 / (2 * dx), 1.0 / (2 * dx)]
+        matrix_a.rows[k] = [k, k - 1, k - 2]
+        rhs[k] = 0.0 if bc_right is None else bc_right(y[i])
 
-    # C. Bas (Neumann/Robin) - excluant les coins (0 et nx-1)
-    for k in range(1, nx - 1):
+    # C. Bas, excluant les coins du bas
+    for j in range(1, nx - 1):
+        k = j
         if sym_test:
-            matrix_a.data[k] = [-3*kappa - 2*dy*h, 4*kappa, -kappa]
-            matrix_a.rows[k] = [k, k+nx, k+2*nx]
-            rhs[k] = -2*dy*h*tinf
+            matrix_a.data[k] = [-3 * kappa - 2 * dy * h, 4 * kappa, -kappa]
+            matrix_a.rows[k] = [k, k + nx, k + 2 * nx]
+            rhs[k] = -2 * dy * h * tinf
         else:
             if bc_bottom is None:
                 matrix_a.data[k] = [-3.0, 4.0, -1.0]
-                matrix_a.rows[k] = [k, k+nx, k+2*nx]
+                matrix_a.rows[k] = [k, k + nx, k + 2 * nx]
                 rhs[k] = 0.0
             else:
-                matrix_a.data[k] = [-3.0/(2*dy), 4.0/(2*dy), -1.0/(2*dy)]
-                matrix_a.rows[k] = [k, k+nx, k+2*nx]
-                rhs[k] = bc_bottom(x[k])
+                matrix_a.data[k] = [-3.0 / (2 * dy), 4.0 / (2 * dy), -1.0 / (2 * dy)]
+                matrix_a.rows[k] = [k, k + nx, k + 2 * nx]
+                rhs[k] = bc_bottom(x[j])
 
-    # D. Haut (Robin) - excluant les coins
-    for k in range(n_nodes - nx + 1, n_nodes - 1):
-        matrix_a.data[k] = [3*kappa + 2*dy*h, -4*kappa, kappa]
-        matrix_a.rows[k] = [k, k-nx, k-2*nx]
-        rhs[k] = 2*dy*h*tinf if bc_top_tinf is None else 2*dy*h*bc_top_tinf(x[k % nx])
+    # D. Haut (Robin fabriquée), partout, coins inclus
+    for j in range(nx):
+        k = (ny - 1) * nx + j
+        matrix_a.data[k] = [3 * kappa + 2 * dy * h, -4 * kappa, kappa]
+        matrix_a.rows[k] = [k, k - nx, k - 2 * nx]
+
+        if bc_top_tinf is None:
+            rhs[k] = 2 * dy * h * bc_top_tinf_fabriquee(x[j], input_dict)
+        else:
+            rhs[k] = 2 * dy * h * bc_top_tinf(x[j])
 
     # --- 5. RÉSOLUTION ---
     matrix_a = matrix_a.tocsr()
     t_array = spsolve(matrix_a, rhs)
 
     return t_array
-
 
 def mms_temperature(input_dict, mms_func):
     """

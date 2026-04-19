@@ -18,7 +18,7 @@ from src.solution_verification import solution_verification, post_processing_ver
 if __name__ == "__main__":
     input_dict = gen_input()
 
-    SIMUL_TYPE = 'solution_verification'         #type de simulation à réaliser :
+    SIMUL_TYPE = 'temperature_mms'         #type de simulation à réaliser :
                                            # 'symmetry_test' ou 'temperature' ou 'temperature_mms'
                                            # ou 'solution_verification' ou 'full_simulation'
     ORDER = '2'                            #ordre de la simulation : '1' ou '2'
