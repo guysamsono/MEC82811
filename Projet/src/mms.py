@@ -167,7 +167,7 @@ def mms_convergence_analysis(input_dict: dict, order, scheme='central'):
     graph_error_log(
         local_dict, discretization_list, l1_list_x, l2_list_x, linf_list_x, order,
         'x et y', file_name=f"convergence_x_order_{order}.png",
-        show_fig=False, xlabel=r"Taille de maille"
+        show_fig=False, xlabel=r"Taille de maille [m]"
     )
 
     print_convergence_table(maille_list, discretization_list, l1_list_x, str(order), "L1 en x")

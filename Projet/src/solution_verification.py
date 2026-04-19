@@ -130,8 +130,8 @@ def plot_relative_error_loglog(
     plt.loglog(h_plot, rel_error, 'D', markersize=7, label='Données')
     plt.loglog(h_plot, e_fit, '--', linewidth=1.5, label='Régression')
 
-    plt.xlabel("Taille de maille h")
-    plt.ylabel("Erreur relative sur la SRQ (%)")
+    plt.xlabel("Taille de maille h [m]")
+    plt.ylabel("Erreur relative sur la SRQ [%]")
     plt.title(title)
     plt.grid(True, which="major", linestyle='-', alpha=0.6)
     plt.grid(True, which="minor", linestyle=':', alpha=0.4)
@@ -241,10 +241,15 @@ def solution_verification(input_dict, order=2, scheme='central'):
             f"Convergence : {name}",
             f"SOLUTION_VERIFICATION/loglog_{nom_fichier_base}.png"
             )
+
+        # Détermination de l'unité selon le nom de la SRQ
+        unit = "K/m" if "Flux" in name else "K"
+
         plot_srq_vs_hp_with_gci(
             data, maille_list, p_used, gci_dim, gci_rel, input_dict,
             title=f"Convergence Asymptotique : {name}",
-            filename=f"SOLUTION_VERIFICATION/asymptote_{nom_fichier_base}.png"
+            filename=f"SOLUTION_VERIFICATION/asymptote_{nom_fichier_base}.png",
+            unit=unit
         )
     print("="*50 + "\n")
 
@@ -286,7 +291,7 @@ def post_processing_verification(input_dict):
 
 def plot_srq_vs_hp_with_gci(
         srq_list, maille_list, p_observe, gci_fin_dim, gci_fin_rel, input_dict,
-        title="Convergence Asymptotique de la SRQ", filename="srq_vs_h.png"):
+        title="Convergence Asymptotique de la SRQ", filename="srq_vs_h.png", unit=""):
     """
     Trace la valeur absolue de la SRQ en fonction de h^p,
     avec l'extrapolation de Richardson et la barre d'erreur du GCI (dim et %).
@@ -307,18 +312,18 @@ def plot_srq_vs_hp_with_gci(
 
     hp_line = np.linspace(0, max(hp_array)*1.1, 100)
     plt.plot(hp_line, slope * hp_line + intercept, '--', color='gray',
-             label=f"Extrapolation Richardson\n($f_{{exact}} \\approx {f_exact:.5g}$)")
+             label=f"Extrapolation Richardson\n($f_{{exact}} \\approx {f_exact:.5g}$ [{unit}])")
 
     plt.plot(hp_array, srq_array, 's', markersize=8, color='#1f77b4', label='Solutions numériques calculées')
 
-    label_gci = f"Incertitude GCI : ±{gci_fin_dim:.2e} ({gci_fin_rel:.2e} %)"
+    label_gci = f"Incertitude GCI : ±{gci_fin_dim:.2e} {unit} ({gci_fin_rel:.2e} %)"
     plt.errorbar(hp_array[-1], srq_array[-1], yerr=gci_fin_dim, fmt='none', ecolor='red',
                  capsize=5, markeredgewidth=2, label=label_gci)
 
-    plt.plot(0, f_exact, 'r*', markersize=14, label='Valeur Asymptotique (h=0)')
+    plt.plot(0, f_exact, 'r*', markersize=14, label=f'Valeur Asymptotique (h=0) [{unit}]')
 
-    plt.xlabel(f"Taille de maille à la puissance $p$ ($h^{{{p_observe:.2f}}}$)", fontsize=12)
-    plt.ylabel("Valeur absolue de la SRQ", fontsize=12)
+    plt.xlabel(f"Taille de maille à la puissance $p$ ($h^{{{p_observe:.2f}}}$) [$m^{{{p_observe:.2f}}}$]", fontsize=12)
+    plt.ylabel(f"Valeur absolue de la SRQ [{unit}]", fontsize=12)
     plt.ticklabel_format(useOffset=False, axis='y')
     plt.title(title, fontsize=14, pad=15)
     plt.grid(True, linestyle='--', alpha=0.6)

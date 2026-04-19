@@ -13,14 +13,14 @@ def graph_error_log(input_dict: dict,
                     variable_convergence,
                     file_name="convergence.png",
                     show_fig=False,
-                    xlabel=r"Taille de maille (dx*dy)[m²]"):
+                    xlabel=r"Taille de maille (dx*dy) [m²]"):
     """
     Affiche les erreurs L1, L2 et Linf en échelle log-log.
 
     Paramètres
     ----------
     input_dict : dict
-        Dictionnaire des paramètres du problème.
+        Dictionnaire des paramètres du problème. [cite: 43]
     discretization : array-like
         Valeurs de discrétisation (ex: dx, dy, ou h).
     l1_list, l2_list, linf_list : array-like
@@ -35,7 +35,7 @@ def graph_error_log(input_dict: dict,
     show_fig : bool
         Afficher la figure à l'écran ou non.
     xlabel : str
-        Étiquette de l'axe x.
+        Étiquette de l'axe x. [cite: 9]
     """
 
     rho = input_dict['rho']

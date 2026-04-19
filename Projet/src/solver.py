@@ -391,7 +391,7 @@ def save_as_csv(t_array, input_dict, filename='results/temperature_field.csv'):
             data[idx] = [x[j], y[i], t_mesh[i, j]]
             idx += 1
 
-    np.savetxt(filename, data, delimiter=',', header='x,y,T', comments='')
+    np.savetxt(filename, data, delimiter=',', header='x [m],y [m],T [K]', comments='')
 
 
 def save_input_as_csv(input_dict, filename='results/input_parameters.csv'):

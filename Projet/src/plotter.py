@@ -32,9 +32,9 @@ def temperature_plotter(
     plt.figure(figsize=(8, 4))
     plt.contourf(x, y, t_mesh, 100, cmap='hot')
     plt.gca().set_aspect('equal', adjustable='box')
-    plt.colorbar(label='Temperature')
-    plt.xlabel('x')
-    plt.ylabel('y')
+    plt.colorbar(label='Temperature [K]')
+    plt.xlabel('x [m]')
+    plt.ylabel('y [m]')
     plt.title(title if title else 'Temperature distribution')
     plt.tight_layout()
 
@@ -57,8 +57,8 @@ def error_plotter(error, input_dict, filename='error_field.png'):
     plt.contourf(x, y, error_log, 100, cmap='viridis')
     plt.gca().set_aspect('equal', adjustable='box')
     plt.colorbar(label=r'$\log_{10}(|\mathrm{Error}|)$')
-    plt.xlabel('x')
-    plt.ylabel('y')
+    plt.xlabel('x [m]')
+    plt.ylabel('y [m]')
     plt.title('Log error distribution')
 
     save_full_path = os.path.join(input_dict['save_path'], filename)
