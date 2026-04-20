@@ -169,7 +169,7 @@ def calculer_gci_et_asymptotique(srq_list, p_observe, p_formel=2.0, ratio=2.0):
         Fs = 3.0
         p_utilise = min(max(0.5, p_observe), p_formel)
 
-    # GCI = (Fs / (r^p - 1)) * |f2 - f1|
+    
     gci_21_dim = (Fs / (ratio**p_utilise - 1)) * abs(f1 - f2)
     gci_32_dim = (Fs / (ratio**p_utilise - 1)) * abs(f2 - f3)
 
@@ -220,10 +220,14 @@ def solution_verification(input_dict, order=2, scheme='central'):
         "Temp. Point (0.80, 0.80)": srq_temp_pt
     }
 
-    print("\n" + "="*50)
-    header = f"{'SRQ':<25} | {'p Obs.':<7} | {'p Util.':<7} | {'Fs':<4} | {'GCI (dim)':<11} | {'GCI (%)':<9} | {'Asympt.'}"
+    print("\n" + "="*100)
+    header = (
+        f"{'SRQ':<25} | {'Dernière valeur':<16} | {'p Obs.':<7} | "
+        f"{'p Util.':<7} | {'Fs':<4} | {'GCI (dim)':<11} | "
+        f"{'GCI (%)':<9} | {'Asympt.'}"
+    )
     print(header)
-    print("-" * 50)
+    print("-" * 100)
 
     for name, data in srqs.items():
         p_obs = calcul_ordre_convergence_richardson(data, maille_list, order_val)
@@ -232,7 +236,13 @@ def solution_verification(input_dict, order=2, scheme='central'):
         res = calculer_gci_et_asymptotique(data, p_obs, p_formel=float(order_val))
         gci_dim, gci_rel, asymp, fs, p_used = res
 
-        print(f"{name:<25} | {p_obs:<7.3f} | {p_used:<7.3f} | {fs:<4.2f} | {gci_dim:<11.3e} | {gci_rel:<9.3e} | {asymp:<8.3f}")
+        last_value = data[-1]
+
+        print(
+            f"{name:<25} | {last_value:<16.6e} | {p_obs:<7.3f} | "
+            f"{p_used:<7.3f} | {fs:<4.2f} | {gci_dim:<11.3e} | "
+            f"{gci_rel:<9.3e} | {asymp:<8.3f}"
+        )
 
         nom_fichier_base = name.replace(' ', '_').replace('(', '').replace(')', '').replace(',', '').lower()
 
@@ -240,7 +250,7 @@ def solution_verification(input_dict, order=2, scheme='central'):
             data, maille_list, input_dict,
             f"Convergence : {name}",
             f"SOLUTION_VERIFICATION/loglog_{nom_fichier_base}.png"
-            )
+        )
 
         # Détermination de l'unité selon le nom de la SRQ
         unit = "K/m" if "Flux" in name else "K"
@@ -251,7 +261,8 @@ def solution_verification(input_dict, order=2, scheme='central'):
             filename=f"SOLUTION_VERIFICATION/asymptote_{nom_fichier_base}.png",
             unit=unit
         )
-    print("="*50 + "\n")
+
+    print("="*100 + "\n")
 
 
 def post_processing_verification(input_dict):
